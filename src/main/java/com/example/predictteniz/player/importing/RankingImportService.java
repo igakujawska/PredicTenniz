@@ -49,10 +49,11 @@ public class RankingImportService {
             int unknown = 0;
             for (var row : records) {
                 if (!row.get("ranking_date").equals(date.format(DateTimeFormatter.BASIC_ISO_DATE))) continue;
-                if (!row.isConsistent() || !seen.add(row.get("player")))
+                if (!row.isConsistent())
                     throw new IllegalArgumentException("Inconsistent or duplicate ranking row.");
                 var identity = known.get(row.get("player"));
                 if (identity == null) { unknown++; continue; }
+                if (!seen.add(row.get("player"))) throw new IllegalArgumentException("Duplicate known player ranking.");
                 int position = Integer.parseInt(row.get("rank"));
                 Integer points = row.get("points").isBlank() ? null : Integer.valueOf(row.get("points"));
                 if (position < 1 || (points != null && points < 0))

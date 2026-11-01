@@ -25,11 +25,11 @@ class RankingImportServiceTest {
     void importsLatestSnapshotForKnownPlayersAndSkipsRepeatedImport() throws Exception {
         var player = players.save(new Player("Ranking", "Test", "POL", null));
         identities.save(new PlayerExternalId(player, "SACKMANN_ATP", "42"));
-        String csv = "ranking_date,rank,player,points\n20260601,8,42,100\n20260608,5,42,200\n20260608,1,999,500\n";
+        String csv = "ranking_date,rank,player,points\n20260601,8,42,100\n20260608,5,42,200\n20260608,1,999,500\n20260608,9,999,100\n";
         var first = importer.importLatest(new StringReader(csv));
         var repeated = importer.importLatest(new StringReader(csv));
         assertThat(first.created()).isEqualTo(1);
-        assertThat(first.unknownPlayers()).isEqualTo(1);
+        assertThat(first.unknownPlayers()).isEqualTo(2);
         assertThat(repeated.created()).isZero();
         assertThat(repeated.alreadyKnown()).isEqualTo(1);
         assertThat(rankings.findAll()).singleElement().satisfies(ranking -> {
@@ -45,6 +45,15 @@ class RankingImportServiceTest {
         String csv = "ranking_date,rank,player,points\n20260608,0,42,200\n";
         assertThatThrownBy(() -> importer.importLatest(new StringReader(csv)))
             .isInstanceOf(IllegalArgumentException.class);
+        assertThat(rankings.count()).isZero();
+    }
+    @Test
+    void rejectsConflictingRankingsForKnownPlayer() {
+        var player = players.save(new Player("Duplicate", "Test", null, null));
+        identities.save(new PlayerExternalId(player, "SACKMANN_ATP", "42"));
+        String csv = "ranking_date,rank,player,points\n20260608,2,42,200\n20260608,3,42,100\n";
+        assertThatThrownBy(() -> importer.importLatest(new StringReader(csv)))
+            .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("Duplicate known");
         assertThat(rankings.count()).isZero();
     }
 }
