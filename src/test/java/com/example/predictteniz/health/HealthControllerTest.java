@@ -35,7 +35,7 @@ class HealthControllerTest {
     void publicAccessDoesNotExtendToOtherPaths() throws Exception {
         mvc.perform(get("/api/health/details").accept(MediaType.APPLICATION_JSON))
             .andExpect(status().isUnauthorized());
-        mvc.perform(get("/api/players").accept(MediaType.APPLICATION_JSON))
+        mvc.perform(get("/api/private").accept(MediaType.APPLICATION_JSON))
             .andExpect(status().isUnauthorized());
     }
 
