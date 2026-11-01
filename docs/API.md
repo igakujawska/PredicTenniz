@@ -17,6 +17,8 @@ Content-Type: application/json
 
 Returns `201` with an ID, model version, `ILLUSTRATIVE` data mode, conditional favorite bracket and standings. An 8-player draw needs four prize values: quarter-final exit, semi-final exit, runner-up, champion. Each `advancement[r]` is the probability of winning round `r+1`.
 
+`POST /api/draws/preview` accepts the same body and returns `200` without persisting a run. The dashboard uses it for the initial demonstration and imported draw previews.
+
 ```http
 POST /api/predictions
 Content-Type: application/json

@@ -52,4 +52,17 @@ class DrawServiceTest {
         double totalPrizes = result.standings().stream().mapToDouble(DrawResult.Standing::expectedPrize).sum();
         assertThat(totalPrizes).isCloseTo(800, within(1e-9));
     }
+    @Test void conservesProbabilityMassAcrossAllSupportedDrawSizes() {
+        for (int size : List.of(2,4,8,16,32,64)) {
+            int rounds = Integer.numberOfTrailingZeros(size);
+            List<String> ids = java.util.stream.IntStream.range(0,size).mapToObj(i -> "p"+i).toList();
+            List<Long> prizes = java.util.stream.IntStream.rangeClosed(0,rounds).mapToObj(i -> (long)i*100).toList();
+            var result = equalPlayers().calculate(request(ids,prizes));
+            for (int round = 0; round < rounds; round++) {
+                final int index = round;
+                double sum = result.standings().stream().mapToDouble(s -> s.advancement().get(index)).sum();
+                assertThat(sum).isCloseTo(size / Math.pow(2,round+1),within(1e-12));
+            }
+        }
+    }
 }

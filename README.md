@@ -1,4 +1,4 @@
-# CourtVision
+# PredicTenniz · CourtVision
 
 **A tennis prediction lab: explore a draw, quantify uncertainty, estimate prize money.**
 
@@ -17,6 +17,8 @@ Portfolio project built with Java 21, Spring Boot, React, TypeScript and SQL. Th
 ## Run locally
 
 Prerequisites: **JDK 21**, Node.js 22.12+ and Python 3.11+ for the optional research workflow.
+
+On Windows, from the repository root, run `./scripts/Start-Backend.ps1` and `./scripts/Start-Frontend.ps1` in two separate terminals. Leave them open while using the app; Ctrl+C stops each process. The backend script can locate a JDK 21 under `Program Files/Java`; otherwise set `JAVA_HOME`. Equivalent manual commands:
 
 ```powershell
 # Terminal 1 (Windows)
@@ -53,6 +55,7 @@ The demo works only with an available backend. A connection failure is shown as 
 | --- | --- | --- |
 | GET | `/api/players` | Illustrative player snapshots and surface ratings |
 | POST | `/api/predictions` | Pairwise probability and explanation |
+| POST | `/api/draws/preview` | Calculate a draw without persisting it |
 | POST | `/api/simulations` | Validate a draw, calculate probabilities, persist the result |
 | GET | `/api/simulations` | Last 20 saved runs |
 | GET | `/api/simulations/{id}` | Reload a saved run |
@@ -69,6 +72,8 @@ For players A and B: `P(A wins) = 1 / (1 + 10 ** ((Elo_B - Elo_A) / 400))`.
 This is a transparent baseline. The demo ratings are synthetic inputs and **have no claimed predictive accuracy**. It ignores injuries, fatigue, withdrawals, match format and time-varying form. Probabilities are conditional on every listed player participating. There are no byes or reseeding in v1. See [the model card](docs/MODEL_CARD.md) for assumptions, formulas and the path toward ML and DL.
 
 ## Learning and delivery
+
+The [first historical experiment](docs/EXPERIMENT_001.md) compares 50%, global Elo and fitted logistic regression on 2,973 test matches from 2024. Elo achieved lower test log loss (0.62328) than logistic regression (0.62645). These scores describe offline research, not the dashboard's synthetic ratings. See [verification evidence](docs/VERIFICATION.md).
 
 Read [LEARNING_PATH.md](docs/LEARNING_PATH.md) for small exercises and acceptance criteria. Read [DECISIONS.md](docs/DECISIONS.md) for engineering tradeoffs. Documentation is in English for portfolio readers; the learning guide is in Polish.
 
