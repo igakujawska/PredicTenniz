@@ -80,4 +80,35 @@ class TournamentApiTest {
             .andExpect(status().isOk()).andExpect(jsonPath("$.latestRankingDate").value("2026-06-08"))
             .andExpect(jsonPath("$.players[0].position").value(1));
     }
+    @Test
+    void savedMlDrawKeepsSurfaceFormatAndModelVersion() throws Exception {
+        String request = body(rankedPair()).replace("\"playerIds\"", "\"surface\":\"CLAY\",\"bestOf\":5,\"modelVersion\":\"rank-logistic-v1\",\"playerIds\"");
+        var response = mvc.perform(post("/api/tournaments").with(csrf()).contentType(MediaType.APPLICATION_JSON).content(request))
+            .andExpect(status().isCreated()).andExpect(jsonPath("$.forecast.modelVersion").value("rank-logistic-v1"))
+            .andExpect(jsonPath("$.forecast.surface").value("CLAY")).andExpect(jsonPath("$.forecast.bestOf").value(5))
+            .andReturn().getResponse();
+        mvc.perform(get(response.getHeader("Location"))).andExpect(status().isOk())
+            .andExpect(jsonPath("$.forecast.modelVersion").value("rank-logistic-v1"))
+            .andExpect(jsonPath("$.forecast.surface").value("CLAY")).andExpect(jsonPath("$.forecast.bestOf").value(5));
+    }
+
+    @Test
+    void modelTrainedInTheFutureCannotBeUsedInHistoricalForecast() throws Exception {
+        String request = body(rankedPair()).replace("2026-06-08", "2024-06-08")
+            .replace("\"playerIds\"", "\"modelVersion\":\"rank-logistic-v1\",\"playerIds\"");
+        mvc.perform(post("/api/tournaments/preview").with(csrf()).contentType(MediaType.APPLICATION_JSON).content(request))
+            .andExpect(status().isUnprocessableEntity())
+            .andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString("wytrenowany")));
+        assertThat(draws.count()).isZero();
+        mvc.perform(get("/api/tournaments/models")).andExpect(status().isOk())
+            .andExpect(jsonPath("$[1].trained").value(true)).andExpect(jsonPath("$[1].testMatches").value(2483));
+    }
+
+    @Test
+    void invalidMatchFormatDoesNotCreateADraw() throws Exception {
+        String request = body(rankedPair()).replace("\"playerIds\"", "\"bestOf\":4,\"playerIds\"");
+        mvc.perform(post("/api/tournaments").with(csrf()).contentType(MediaType.APPLICATION_JSON).content(request))
+            .andExpect(status().isBadRequest());
+        assertThat(draws.count()).isZero();
+    }
 }

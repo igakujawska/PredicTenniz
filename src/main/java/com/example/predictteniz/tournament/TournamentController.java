@@ -1,6 +1,9 @@
 package com.example.predictteniz.tournament;
 
 import com.example.predictteniz.prediction.PredictionService;
+import com.example.predictteniz.prediction.PredictionModels;
+import com.example.predictteniz.prediction.MatchConditions;
+import java.util.Map;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -25,11 +28,16 @@ import org.springframework.web.bind.annotation.RestController;
 public class TournamentController {
     private final TournamentService tournaments;
     private final PredictionService predictions;
+    private final PredictionModels models;
 
-    public TournamentController(TournamentService tournaments, PredictionService predictions) {
+    public TournamentController(TournamentService tournaments, PredictionService predictions, PredictionModels models) {
         this.tournaments = tournaments;
         this.predictions = predictions;
+        this.models = models;
     }
+
+    @GetMapping("/models")
+    public List<Map<String, Object>> models() { return models.descriptions(); }
 
     @GetMapping("/players")
     public PredictionService.Catalog players(@RequestParam(required = false) LocalDate asOf) {
@@ -44,15 +52,16 @@ public class TournamentController {
 
     @PostMapping("/preview")
     public TournamentService.DrawResponse preview(@Valid @RequestBody CreateDraw request) {
-        return tournaments.preview(request.title(), request.asOf(), request.playerIds());
+        return tournaments.preview(request.title(), request.asOf(), request.playerIds(), request.surface(), request.bestOf(), request.modelVersion());
     }
 
     @PostMapping
     public ResponseEntity<TournamentService.DrawResponse> create(@Valid @RequestBody CreateDraw request) {
-        var result = tournaments.create(request.title(), request.asOf(), request.playerIds());
+        var result = tournaments.create(request.title(), request.asOf(), request.playerIds(), request.surface(), request.bestOf(), request.modelVersion());
         return ResponseEntity.created(URI.create("/api/tournaments/" + result.id())).body(result);
     }
 
     public record CreateDraw(@NotBlank @Size(max = 100) String title, @NotNull @PastOrPresent LocalDate asOf,
-                             @NotNull @Size(min = 2, max = 16) List<@NotNull @Positive Long> playerIds) {}
+                             @NotNull @Size(min = 2, max = 16) List<@NotNull @Positive Long> playerIds,
+                             MatchConditions.Surface surface, Integer bestOf, @Size(max = 64) String modelVersion) {}
 }

@@ -1,5 +1,7 @@
 package com.example.predictteniz.tournament;
 
+import com.example.predictteniz.prediction.MatchConditions;
+import com.example.predictteniz.prediction.PredictionModels;
 import com.example.predictteniz.prediction.PredictionService;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -16,36 +18,52 @@ public class TournamentService {
     private final TournamentDrawRepository draws;
     private final PredictionService predictions;
     private final BracketCalculator calculator;
+    private final PredictionModels models;
 
-    public TournamentService(TournamentDrawRepository draws, PredictionService predictions, BracketCalculator calculator) {
+    public TournamentService(TournamentDrawRepository draws, PredictionService predictions,
+                             BracketCalculator calculator, PredictionModels models) {
         this.draws = draws;
         this.predictions = predictions;
         this.calculator = calculator;
+        this.models = models;
     }
 
-    public DrawResponse preview(String title, LocalDate asOf, List<Long> playerIds) {
+    public DrawResponse preview(String title, LocalDate asOf, List<Long> playerIds,
+                                MatchConditions.Surface surface, Integer bestOf, String version) {
         validate(title, asOf, playerIds);
-        var forecast = calculator.calculate(predictions.snapshots(playerIds, asOf));
+        var conditions = conditions(surface, bestOf);
+        var model = models.resolve(version, asOf);
+        var forecast = calculator.calculate(predictions.snapshots(playerIds, asOf), model, conditions);
         return new DrawResponse(null, title.strip(), asOf, null, forecast);
     }
 
     @Transactional
-    public DrawResponse create(String title, LocalDate asOf, List<Long> playerIds) {
-        var preview = preview(title, asOf, playerIds);
-        var draw = draws.save(new TournamentDraw(title.strip(), asOf, playerIds));
+    public DrawResponse create(String title, LocalDate asOf, List<Long> playerIds,
+                               MatchConditions.Surface surface, Integer bestOf, String version) {
+        var preview = preview(title, asOf, playerIds, surface, bestOf, version);
+        var draw = draws.save(new TournamentDraw(title.strip(), asOf, playerIds, conditions(surface, bestOf),
+            preview.forecast().modelVersion()));
         return new DrawResponse(draw.getId(), draw.getTitle(), draw.getAsOf(), draw.getCreatedAt(), preview.forecast());
     }
 
     public DrawResponse get(UUID id) {
         var draw = draws.findById(id).orElseThrow(() ->
             new ResponseStatusException(HttpStatus.NOT_FOUND, "Nie znaleziono drabinki."));
-        var forecast = calculator.calculate(predictions.snapshots(draw.getPlayerIds(), draw.getAsOf()));
+        var model = models.resolve(draw.getModelVersion(), draw.getAsOf());
+        var forecast = calculator.calculate(predictions.snapshots(draw.getPlayerIds(), draw.getAsOf()), model, draw.getConditions());
         return new DrawResponse(draw.getId(), draw.getTitle(), draw.getAsOf(), draw.getCreatedAt(), forecast);
     }
 
     public List<DrawSummary> recent() {
         return draws.findTop20ByOrderByCreatedAtDesc().stream().map(draw ->
             new DrawSummary(draw.getId(), draw.getTitle(), draw.getAsOf(), draw.getPlayerIds().size())).toList();
+    }
+
+    private MatchConditions conditions(MatchConditions.Surface surface, Integer bestOf) {
+        int format = bestOf == null ? 3 : bestOf;
+        if (format != 3 && format != 5)
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Format meczu musi być best of 3 lub 5.");
+        return new MatchConditions(surface == null ? MatchConditions.Surface.HARD : surface, format);
     }
 
     private void validate(String title, LocalDate asOf, List<Long> ids) {

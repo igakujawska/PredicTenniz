@@ -1,5 +1,6 @@
 package com.example.predictteniz.tournament;
 
+import com.example.predictteniz.prediction.MatchConditions;
 import com.example.predictteniz.prediction.PredictionService.RankedPlayer;
 import com.example.predictteniz.prediction.WinProbabilityModel;
 import java.util.ArrayList;
@@ -18,6 +19,10 @@ public class BracketCalculator {
     public BracketCalculator(WinProbabilityModel model) { this.model = model; }
 
     public Forecast calculate(List<RankedPlayer> players) {
+        return calculate(players, model, MatchConditions.DEFAULT);
+    }
+
+    public Forecast calculate(List<RankedPlayer> players, WinProbabilityModel selected, MatchConditions conditions) {
         int size = players.size();
         if (size < 2 || size > 16 || (size & (size - 1)) != 0
                 || players.stream().map(RankedPlayer::id).distinct().count() != size)
@@ -37,7 +42,7 @@ public class BracketCalculator {
                 for (var left : distributions.get(i).entrySet()) {
                     for (var right : distributions.get(i + 1).entrySet()) {
                         double encounter = left.getValue() * right.getValue();
-                        double probability = probability(byId.get(left.getKey()), byId.get(right.getKey()));
+                        double probability = probability(byId.get(left.getKey()), byId.get(right.getKey()), selected, conditions);
                         winners.merge(left.getKey(), encounter * probability, Double::sum);
                         winners.merge(right.getKey(), encounter * (1 - probability), Double::sum);
                     }
@@ -45,7 +50,7 @@ public class BracketCalculator {
                 next.add(winners);
                 RankedPlayer a = projected.get(i);
                 RankedPlayer b = projected.get(i + 1);
-                double p = probability(a, b);
+                double p = probability(a, b, selected, conditions);
                 RankedPlayer winner = p >= 0.5 ? a : b;
                 matches.add(new ProjectedMatch(a, b, p, 1 - p, winner.id()));
                 nextProjected.add(winner);
@@ -64,17 +69,17 @@ public class BracketCalculator {
             .map(entry -> new TitleChance(byId.get(entry.getKey()), entry.getValue()))
             .sorted(Comparator.comparingDouble(TitleChance::probability).reversed()
                 .thenComparingLong(chance -> chance.player().id())).toList();
-        return new Forecast(model.version(), List.copyOf(rounds), chances);
+        return new Forecast(selected.version(), conditions.surface(), conditions.bestOf(), List.copyOf(rounds), chances);
     }
 
-    private double probability(RankedPlayer a, RankedPlayer b) {
-        double probability = model.probability(a.position(), b.position());
+    private double probability(RankedPlayer a, RankedPlayer b, WinProbabilityModel selected, MatchConditions conditions) {
+        double probability = selected.probability(a.position(), b.position(), conditions);
         if (!Double.isFinite(probability) || probability < 0 || probability > 1)
             throw new IllegalStateException("Model returned an invalid probability.");
         return probability;
     }
 
-    public record Forecast(String modelVersion, List<Round> rounds, List<TitleChance> titleChances) {}
+    public record Forecast(String modelVersion, MatchConditions.Surface surface, int bestOf, List<Round> rounds, List<TitleChance> titleChances) {}
     public record Round(int number, String name, List<ProjectedMatch> matches) {}
     public record ProjectedMatch(RankedPlayer playerA, RankedPlayer playerB, double probabilityA,
                                  double probabilityB, long predictedWinnerId) {}
