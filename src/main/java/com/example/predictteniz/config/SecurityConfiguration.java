@@ -13,7 +13,7 @@ public class SecurityConfiguration {
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.authorizeHttpRequests(authorize -> authorize
-                .requestMatchers(HttpMethod.GET, "/api/health", "/api/players", "/api/tournaments", "/api/tournaments/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/", "/assets/**", "/api/health", "/api/players", "/api/tournaments", "/api/tournaments/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/tournaments", "/api/tournaments/preview").permitAll()
                 .anyRequest().authenticated())
             .formLogin(Customizer.withDefaults())
