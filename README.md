@@ -7,13 +7,19 @@ Projekt rozwijany krok po kroku w IntelliJ. Aktualny kod znajduje się na **main
 ## Co już działa
 
 - Import profili i najnowszego snapshotu rankingu z przypiętego archiwum CSV.
-- Dashboard pod `/`, drabinki 2/4/8/16 zawodników, automatyczny podgląd bez zapisu.
+- Dashboard pod `/`: ciemny tenisowy interfejs, drabinki 2/4/8/16 zawodników, losowanie par, podświetlanie drogi gracza i animowane przeliczanie szans. Animacje respektują ograniczenie ruchu w systemie.
 - Prognozy pojedynczych meczów i obliczanie szans na tytuł ze wszystkich możliwych ścieżek.
-- Zapis kolejności par i daty danych, ponowny odczyt, import/eksport JSON.
+- Zapis kolejności par, daty danych, nawierzchni, formatu meczu i wersji modelu; ponowny odczyt i import/eksport JSON.
 - Walidacja wejścia, jawne błędy brakujących rankingów, ochrona CSRF i migracje Flyway.
 
-**Obecny model to heurystyka rankingowa, nie wytrenowany ML.** Procenty nie są skalibrowane na wynikach meczów. Próbka przygotowana z archiwum ma datę **2026-06-08**, a nie dzisiejszy ranking. Rozpoznawanie zdjęć/PDF drabinek, nawierzchnia, forma, nagrody pieniężne oraz trening modeli są kolejnymi etapami.
+**Dostępne są dwa modele: heurystyka rankingowa i wytrenowana regresja logistyczna ML.** Możesz zmieniać nawierzchnię i format meczu. [Moduł Pythona](ml/README.md) opisuje trening, test na osobnym sezonie i ograniczenia wyników. Próbka przygotowana z archiwum ma datę **2026-06-08**, a nie dzisiejszy ranking. Rozpoznawanie zdjęć/PDF drabinek, forma, nagrody pieniężne oraz sieci neuronowe są kolejnymi etapami.
 
+<details>
+<summary>Podgląd dashboardu i Model Lab</summary>
+
+![PredictTeniz: drabinka z modelem ML i wynikami eksperymentu](docs/images/dashboard.jpg)
+
+</details>
 ## Uruchomienie
 
 Wymagane: JDK 25+, Docker Desktop oraz dostęp do internetu przy pierwszym pobraniu zależności i danych. Frontend jest częścią Spring Boot; nie wymaga osobnego serwera ani Node.js.
@@ -59,4 +65,4 @@ Testy sprawdzają m.in. import bez duplikatów, brak użycia przyszłych ranking
 
 ## Następny krok badawczy
 
-Dodać wyniki historycznych meczów, zbudować cechy dostępne przed meczem i porównać bazowy model z Elo oraz regresją logistyczną na podziale chronologicznym. Dopiero pomiary log loss, Brier score i kalibracji pozwolą ocenić, czy kolejny model daje użyteczną poprawę. Wyników skuteczności obecnie nie deklarujemy.
+Rozszerzyć istniejący eksperyment o Elo i formę wyliczaną bez przyszłych wyników. Obecny ML ma nieznacznie niższy log loss od heurystyki na 2483 testowych meczach z 2025 roku, przy tej samej trafności 64.9%. Nie traktujemy tego jako potwierdzenia skuteczności na bieżących meczach. Wyniki i sposób odtworzenia eksperymentu: [ml/README.md](ml/README.md).

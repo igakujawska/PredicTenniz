@@ -11,7 +11,8 @@ flowchart TD
     PR --> DB[(PostgreSQL)]
     TS --> BC[BracketCalculator: wszystkie ścieżki turnieju]
     BC --> MODEL[WinProbabilityModel]
-    MODEL --> BASE[RankBaselineModel: obecna heurystyka]
+    MODEL --> BASE[RankBaselineModel: heurystyka]
+    MODEL --> ML[TrainedLogisticModel: parametry z Pythona]
     TS --> DR[TournamentDrawRepository: zapis par]
     DR --> DB
     CSV[Importy CSV + sprawdzenie SHA-256] --> PR
@@ -48,18 +49,18 @@ flowchart TD
 
 ## Model bazowy i drabinka
 
-Obecnie `P(A wygrywa) = sqrt(rankB) / (sqrt(rankA) + sqrt(rankB))`. Równe pozycje dają 50%; pozycja 1 przeciwko 16 daje 80%. Wykładnik 0.5 jest ustaloną regułą, a nie parametrem wyuczonym na meczach. Model nie jest jeszcze skalibrowany ani oceniony na zbiorze testowym.
+Model bazowy: `P(A wygrywa) = sqrt(rankB) / (sqrt(rankA) + sqrt(rankB))`. Równe pozycje dają 50%; pozycja 1 przeciwko 16 daje 80%. Wykładnik 0.5 jest ustaloną regułą, a nie parametrem wyuczonym na meczach. Model nie jest jeszcze skalibrowany ani oceniony na zbiorze testowym.
 
 Wizualna ścieżka wybiera faworyta każdego spotkania; przy remisie wybieramy zawodnika z pierwszego miejsca pary. To przykładowy wariant. Szanse na tytuł liczymy osobno, sumując wszystkie możliwe spotkania. Przy czterech równych zawodnikach każdy otrzymuje 25%, a suma dla całego turnieju wynosi 100% przed zaokrągleniem. Są to dokładne obliczenia **w ramach przyjętego modelu**, przy stałej sile zawodnika i niezależności wyników warunkowej względem tych sił.
 
-Na późniejszy ML/DL jest miejsce za kontraktem `WinProbabilityModel`. Gdy dojdą nawierzchnia i forma, kontrakt rozszerzymy o zestaw cech meczu. Nie tworzymy teraz pozornego modelu uczonego bez danych o wynikach.
+`WinProbabilityModel` obsługuje obecnie również `MatchConditions`: nawierzchnię HARD/CLAY/GRASS i best of 3/5. `PredictionModels` wybiera wersję bazową albo `rank-logistic-v1` i pilnuje daty zakończenia treningu. Python uczy współczynniki i ocenia model; Java odczytuje JSON oraz liczy prognozy bez osobnego serwera Pythona. [Opis eksperymentu](../ml/README.md) zawiera dane, metryki i ograniczenia.
 
 ## Baza i powtarzalność
 
 - `players`: profile.
 - `player_external_ids`: połączenie lokalnego gracza z identyfikatorem źródła, bez dopasowywania po nazwisku.
 - `player_rankings`: obserwacje rankingów z datą i źródłem.
-- `tournament_draws`: nazwa, data analizy, czas utworzenia i UUID drabinki.
+- `tournament_draws`: nazwa, data analizy, czas utworzenia, UUID, nawierzchnia, format meczu i wersja modelu.
 - `tournament_entries`: dokładna kolejność miejsc i referencje do graczy.
 
 Zapisujemy ustawienie turnieju, a prognozę przeliczamy przy odczycie. Uzupełnienie starszych rankingów lub zmiana modelu może zmienić wynik. Pełny audyt historycznych prognoz będzie wymagał osobnych snapshotów cech, wersji modelu i wyniku obliczenia; obecna wersja jeszcze tego nie obiecuje.
@@ -68,4 +69,8 @@ PostgreSQL działa w Dockerze z trwałym wolumenem. Testy używają osobnego sch
 
 ## Format drabinki JSON
 
-Najłatwiej wyeksportować plik przyciskiem na stronie i potem go wczytać. Format ma pola `title`, `asOf` (YYYY-MM-DD) i `playerIds` (lista 2/4/8/16 różnych lokalnych identyfikatorów). Miejsca 1–2 tworzą pierwszą parę, 3–4 drugą itd. Identyfikatory muszą istnieć w tej bazie i mieć ranking na wskazany dzień. Import plików nie wysyła ich do zewnętrznej usługi. Zdjęcia/PDF oraz oficjalne formaty drabinek wymagają osobnych parserów.
+Najłatwiej wyeksportować plik przyciskiem na stronie i potem go wczytać. Format ma pola `title`, `asOf` (YYYY-MM-DD), `playerIds` (lista 2/4/8/16 różnych lokalnych identyfikatorów), `surface`, `bestOf` i `modelVersion`. Starsze pliki bez trzech ostatnich pól używają HARD, best of 3 i modelu bazowego. Miejsca 1–2 tworzą pierwszą parę, 3–4 drugą itd. Identyfikatory muszą istnieć w tej bazie i mieć ranking na wskazany dzień. Import plików nie wysyła ich do zewnętrznej usługi. Zdjęcia/PDF oraz oficjalne formaty drabinek wymagają osobnych parserów.
+
+## Interakcje dashboardu
+
+Frontend zachowuje poprzedni wynik podczas przeliczania i odrzuca starsze odpowiedzi podglądu. Web Animations API animuje wejście meczów i długości pasków; requestAnimationFrame przeprowadza liczby do nowych wartości. prefers-reduced-motion wyłącza ruch. Losowanie zmienia wyłącznie kolejność wybranych graczy; podświetlenie pokazuje jego drogę w prognozowanym wariancie.
