@@ -4,7 +4,7 @@ Run on **2026-11-01**. This is an offline historical experiment; these models do
 
 ## Source and reproducibility
 
-Jeff Sackmann's ATP match CSVs, 2018–2024, via the [archival mirror](https://github.com/Aneeshers/tennis-sackmann-archive/tree/83733587353df8a41f2fd4f516147d5aa83f5a8d/atp). Exact revision: `83733587353df8a41f2fd4f516147d5aa83f5a8d`. Attribution and data terms: **CC BY-NC-SA 4.0**. This data-derived report is shared under [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/); the software remains MIT.
+Jeff Sackmann's ATP match CSVs, 2018–2024, via the [archival mirror](https://github.com/Aneeshers/tennis-sackmann-archive/tree/83733587353df8a41f2fd4f516147d5aa83f5a8d/atp). Exact revision: `83733587353df8a41f2fd4f516147d5aa83f5a8d`. Attribution and data terms: **CC BY-NC-SA 4.0**. This data-derived report is shared under [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/). No project-wide code license has been selected.
 
 ```powershell
 python research/download.py --start-year 2018 --end-year 2024 --revision 83733587353df8a41f2fd4f516147d5aa83f5a8d

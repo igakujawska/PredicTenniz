@@ -13,7 +13,7 @@ Names identify real tennis players, but all ratings and the payout schedule are 
 - Mirror snapshot: ATP/WTA upstream sources through June 2026; this is an archive, not a live feed.
 - License: **Creative Commons Attribution-NonCommercial-ShareAlike 4.0**. https://creativecommons.org/licenses/by-nc-sa/4.0/
 
-The download helper resolves the mirror's Git commit and records that commit, each source URL and SHA-256 checksum. Raw data and research outputs stay in ignored `data/`. Keep attribution and applicable terms with any redistribution. The MIT code license does not cover external data or imply commercial data rights.
+The download helper resolves the mirror's Git commit and records that commit, each source URL and SHA-256 checksum. Raw data and research outputs stay in ignored `data/`. Keep attribution and applicable terms with any redistribution. External data terms apply independently of any future code license selected for this project.
 
 ## Optional fixtures API
 

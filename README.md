@@ -100,6 +100,6 @@ python -m unittest discover -s research/tests
 
 ## Data and licensing
 
-The included demo player snapshots and payouts are illustrative values authored for this project. They are not copied ATP statistics. Historical research optionally uses Jeff Sackmann's tennis data, available through an [archival mirror](https://github.com/Aneeshers/tennis-sackmann-archive). Those datasets are **CC BY-NC-SA 4.0**; see [DATA_SOURCES.md](docs/DATA_SOURCES.md). Downloaded data and derived research outputs are excluded from Git by default. Code is MIT licensed; that license does not replace external data licenses.
+The included demo player snapshots and payouts are illustrative values authored for this project. They are not copied ATP statistics. Historical research optionally uses Jeff Sackmann's tennis data, available through an [archival mirror](https://github.com/Aneeshers/tennis-sackmann-archive). Those datasets are **CC BY-NC-SA 4.0**; see [DATA_SOURCES.md](docs/DATA_SOURCES.md). Downloaded data and derived research outputs are excluded from Git by default. No project-wide code license has been selected.
 
 This project demonstrates engineering and statistical reasoning. It does not claim an investment edge, betting profit or verified live forecasting performance.
