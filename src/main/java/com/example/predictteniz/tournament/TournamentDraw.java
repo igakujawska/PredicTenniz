@@ -1,5 +1,8 @@
 package com.example.predictteniz.tournament;
 
+import com.example.predictteniz.prediction.MatchConditions;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
@@ -22,6 +25,11 @@ public class TournamentDraw {
     @Column(name = "as_of", nullable = false) private LocalDate asOf;
     @Column(name = "created_at", nullable = false) private Instant createdAt;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 5) private MatchConditions.Surface surface;
+    @Column(name = "best_of", nullable = false) private int bestOf;
+    @Column(name = "model_version", nullable = false, length = 64) private String modelVersion;
+
     @ElementCollection
     @CollectionTable(name = "tournament_entries", joinColumns = @JoinColumn(name = "tournament_id"))
     @OrderColumn(name = "slot")
@@ -31,6 +39,13 @@ public class TournamentDraw {
     protected TournamentDraw() {}
 
     public TournamentDraw(String title, LocalDate asOf, List<Long> playerIds) {
+        this(title, asOf, playerIds, MatchConditions.DEFAULT, "ranking-baseline-v1");
+    }
+
+    public TournamentDraw(String title, LocalDate asOf, List<Long> playerIds, MatchConditions conditions, String modelVersion) {
+        this.surface = conditions.surface();
+        this.bestOf = conditions.bestOf();
+        this.modelVersion = modelVersion;
         this.id = UUID.randomUUID();
         this.title = title;
         this.asOf = asOf;
@@ -42,5 +57,7 @@ public class TournamentDraw {
     public String getTitle() { return title; }
     public LocalDate getAsOf() { return asOf; }
     public Instant getCreatedAt() { return createdAt; }
+    public MatchConditions getConditions() { return new MatchConditions(surface, bestOf); }
+    public String getModelVersion() { return modelVersion; }
     public List<Long> getPlayerIds() { return List.copyOf(playerIds); }
 }
