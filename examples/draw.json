@@ -1,0 +1,7 @@
+{
+  "title": "CourtVision Invitational",
+  "surface": "HARD",
+  "playerIds": ["sinner", "hurkacz", "medvedev", "fritz", "alcaraz", "ruud", "djokovic", "zverev"],
+  "prizes": [25000, 50000, 100000, 200000],
+  "currency": "EUR"
+}
