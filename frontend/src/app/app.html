@@ -1,0 +1,30 @@
+<header class="app-header">
+  <a class="wordmark" routerLink="/draw"
+    ><svg viewBox="0 0 28 28" aria-hidden="true">
+      <circle cx="14" cy="14" r="11" />
+      <path d="M5 6q13 3 17 16M6 22q3-13 16-17" /></svg
+    >PredictTeniz</a
+  >
+  <nav aria-label="Główna nawigacja">
+    <a routerLink="/draw" routerLinkActive="active" ariaCurrentWhenActive="page">Turniej</a>
+    <a routerLink="/match" routerLinkActive="active" ariaCurrentWhenActive="page">Pojedynek</a>
+    <a routerLink="/players" routerLinkActive="active" ariaCurrentWhenActive="page">Zawodnicy</a>
+    <a routerLink="/models" routerLinkActive="active" ariaCurrentWhenActive="page">Modele</a>
+  </nav>
+  <button
+    class="theme-button"
+    type="button"
+    (click)="toggleTheme()"
+    [attr.aria-pressed]="theme() === 'dark'"
+    [attr.aria-label]="theme() === 'light' ? 'Włącz ciemny motyw' : 'Włącz jasny motyw'"
+  >
+    {{ theme() === 'light' ? '◐ Ciemny' : '◑ Jasny' }}
+  </button>
+</header>
+<main class="app-content"><router-outlet /></main>
+<footer class="app-footer">
+  <span>Analiza turniejów ATP · dane historyczne</span
+  ><a href="https://github.com/igakujawska/PredicTenniz" target="_blank" rel="noreferrer"
+    >Kod i dokumentacja</a
+  >
+</footer>
