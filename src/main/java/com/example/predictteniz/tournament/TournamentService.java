@@ -1,6 +1,7 @@
 package com.example.predictteniz.tournament;
 
 import lombok.RequiredArgsConstructor;
+import lombok.Builder;
 
 import com.example.predictteniz.prediction.MatchConditions;
 import com.example.predictteniz.prediction.PredictionModels;
@@ -11,14 +12,12 @@ import java.util.List;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 @RequiredArgsConstructor
 @Service
-@Transactional(readOnly = true)
 public class TournamentService {
-    private final TournamentDrawRepository draws;
+    private final TournamentDrawStore store;
     private final PredictionService predictions;
     private final BracketCalculator calculator;
     private final PredictionModels models;
@@ -30,30 +29,41 @@ public class TournamentService {
         var snapshots = predictions.snapshots(playerIds, asOf);
         var model = models.prepare(version, asOf, snapshots, conditions);
         var forecast = calculator.calculate(snapshots, model, conditions);
-        return new DrawResponse(null, title.strip(), asOf, null, forecast);
+        return DrawResponse.builder().title(title.strip()).asOf(asOf).playerIds(List.copyOf(playerIds))
+            .surface(conditions.surface()).bestOf(conditions.bestOf()).modelVersion(forecast.modelVersion()).forecast(forecast).build();
     }
 
-    @Transactional
     public DrawResponse create(String title, LocalDate asOf, List<Long> playerIds,
                                MatchConditions.Surface surface, Integer bestOf, String version) {
         var preview = preview(title, asOf, playerIds, surface, bestOf, version);
-        var draw = draws.save(new TournamentDraw(title.strip(), asOf, playerIds, conditions(surface, bestOf),
-            preview.forecast().modelVersion()));
-        return new DrawResponse(draw.getId(), draw.getTitle(), draw.getAsOf(), draw.getCreatedAt(), preview.forecast());
+        var saved = store.create(preview.title(), asOf, playerIds, conditions(surface, bestOf), preview.modelVersion());
+        return response(saved, preview.forecast(), null);
+    }
+
+    public DrawResponse update(UUID id, Long expectedVersion, String title, LocalDate asOf, List<Long> playerIds,
+                               MatchConditions.Surface surface, Integer bestOf, String version) {
+        var preview = preview(title, asOf, playerIds, surface, bestOf, version);
+        var saved = store.update(id, expectedVersion, preview.title(), asOf, playerIds, conditions(surface, bestOf), preview.modelVersion());
+        return response(saved, preview.forecast(), null);
     }
 
     public DrawResponse get(UUID id) {
-        var draw = draws.findById(id).orElseThrow(() ->
-            new ResponseStatusException(HttpStatus.NOT_FOUND, "Nie znaleziono drabinki."));
-        var snapshots = predictions.snapshots(draw.getPlayerIds(), draw.getAsOf());
-        var model = models.prepare(draw.getModelVersion(), draw.getAsOf(), snapshots, draw.getConditions());
-        var forecast = calculator.calculate(snapshots, model, draw.getConditions());
-        return new DrawResponse(draw.getId(), draw.getTitle(), draw.getAsOf(), draw.getCreatedAt(), forecast);
+        var draw = store.get(id);
+        try {
+            var preview = preview(draw.title(), draw.asOf(), draw.playerIds(), draw.conditions().surface(), draw.conditions().bestOf(), draw.modelVersion());
+            return response(draw, preview.forecast(), null);
+        } catch (ResponseStatusException error) {
+            if (error.getStatusCode().value() < 500) throw error;
+            return response(draw, null, error.getReason());
+        }
     }
 
-    public List<DrawSummary> recent() {
-        return draws.findTop20ByOrderByCreatedAtDesc().stream().map(draw ->
-            new DrawSummary(draw.getId(), draw.getTitle(), draw.getAsOf(), draw.getPlayerIds().size())).toList();
+    public List<DrawSummary> recent() { return store.recent(); }
+
+    private DrawResponse response(TournamentDrawStore.StoredDraw draw, BracketCalculator.Forecast forecast, String error) {
+        return DrawResponse.builder().id(draw.id()).title(draw.title()).asOf(draw.asOf()).createdAt(draw.createdAt())
+            .version(draw.version()).playerIds(draw.playerIds()).surface(draw.conditions().surface()).bestOf(draw.conditions().bestOf())
+            .modelVersion(draw.modelVersion()).forecast(forecast).predictionError(error).build();
     }
 
     private MatchConditions conditions(MatchConditions.Surface surface, Integer bestOf) {
@@ -72,7 +82,9 @@ public class TournamentService {
                 "Podaj nazwę, datę danych do dziś i 2, 4, 8 lub 16 różnych zawodników.");
     }
 
-    public record DrawResponse(UUID id, String title, LocalDate asOf, Instant createdAt,
-                               BracketCalculator.Forecast forecast) {}
+    @Builder
+    public record DrawResponse(UUID id, String title, LocalDate asOf, Instant createdAt, long version,
+                               List<Long> playerIds, MatchConditions.Surface surface, int bestOf, String modelVersion,
+                               BracketCalculator.Forecast forecast, String predictionError) {}
     public record DrawSummary(UUID id, String title, LocalDate asOf, int players) {}
 }

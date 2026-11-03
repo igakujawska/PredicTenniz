@@ -14,6 +14,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OrderColumn;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -24,8 +25,9 @@ import java.util.UUID;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Entity
 @Table(name = "tournament_draws")
-    public class TournamentDraw {
+public class TournamentDraw {
     @Id private UUID id;
+    @Version private Long version;
     @Column(nullable = false, length = 100) private String title;
     @Column(name = "as_of", nullable = false) private LocalDate asOf;
     @Column(name = "created_at", nullable = false) private Instant createdAt;
@@ -54,6 +56,16 @@ import java.util.UUID;
         this.asOf = asOf;
         this.playerIds = new ArrayList<>(playerIds);
         this.createdAt = Instant.now();
+    }
+
+    public void revise(String title, LocalDate asOf, List<Long> ids, MatchConditions conditions, String modelVersion) {
+        this.title = title;
+        this.asOf = asOf;
+        this.surface = conditions.surface();
+        this.bestOf = conditions.bestOf();
+        this.modelVersion = modelVersion;
+        this.playerIds.clear();
+        this.playerIds.addAll(ids);
     }
 
     public MatchConditions getConditions() { return new MatchConditions(surface, bestOf); }

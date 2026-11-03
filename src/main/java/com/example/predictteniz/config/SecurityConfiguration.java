@@ -15,6 +15,7 @@ public class SecurityConfiguration {
         http.authorizeHttpRequests(authorize -> authorize
                 .requestMatchers(HttpMethod.GET, "/", "/assets/**", "/api/session", "/api/health", "/api/players", "/api/tournaments", "/api/tournaments/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/tournaments", "/api/tournaments/preview").permitAll()
+                .requestMatchers(HttpMethod.PUT, "/api/tournaments/*").permitAll()
                 .anyRequest().authenticated())
             .formLogin(Customizer.withDefaults())
             .httpBasic(Customizer.withDefaults());

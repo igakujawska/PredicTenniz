@@ -158,4 +158,31 @@ class TournamentApiTest {
             .andExpect(status().isOk()).andExpect(jsonPath("$.forecast.rounds.length()").value(4));
         verify(ml, times(1)).predict(argThat(request -> request.pairs().size() == 120));
     }
+    @Test
+    void updatingReordersPlayersAndRejectsStaleVersions() throws Exception {
+        var ids = rankedPair();
+        var created = mvc.perform(post("/api/tournaments").with(csrf()).contentType(MediaType.APPLICATION_JSON).content(body(ids)))
+            .andExpect(status().isCreated()).andExpect(jsonPath("$.version").value(0)).andReturn().getResponse();
+        var location = created.getHeader("Location");
+        String changed = body(List.of(ids.getLast(), ids.getFirst())).replace("API draw", "Nowa nazwa").replace("}", ",\"version\":0}");
+        mvc.perform(put(location).with(csrf()).contentType(MediaType.APPLICATION_JSON).content(changed))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.version").value(1))
+            .andExpect(jsonPath("$.playerIds[0]").value(ids.getLast()));
+        mvc.perform(put(location).with(csrf()).contentType(MediaType.APPLICATION_JSON).content(changed))
+            .andExpect(status().isConflict());
+        mvc.perform(get(location)).andExpect(jsonPath("$.title").value("Nowa nazwa"));
+        assertThat(draws.count()).isEqualTo(1);
+    }
+
+    @Test
+    void savedDefinitionRemainsReadableWhenPythonIsDown() throws Exception {
+        var ids = rankedPair();
+        var created = mvc.perform(post("/api/tournaments").with(csrf()).contentType(MediaType.APPLICATION_JSON).content(body(ids)))
+            .andReturn().getResponse();
+        doThrow(new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Silnik ML jest niedostępny.")).when(ml).predict(any());
+        mvc.perform(get(created.getHeader("Location"))).andExpect(status().isOk())
+            .andExpect(jsonPath("$.playerIds[0]").value(ids.getFirst()))
+            .andExpect(jsonPath("$.forecast").isEmpty()).andExpect(jsonPath("$.predictionError").isNotEmpty());
+    }
+
 }
