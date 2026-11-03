@@ -1,0 +1,71 @@
+<div class="page-heading">
+  <div>
+    <h1>Zawodnicy ATP</h1>
+    <p class="muted">Ranking dostępny w bazie · {{ date() | date: 'dd.MM.yyyy' }}</p>
+  </div>
+  <span class="muted">{{ filtered().length }} z {{ players().length }} zawodników</span>
+</div>
+@if (error()) {
+  <div class="error" role="alert">{{ error() }}</div>
+}
+<section class="panel">
+  <div class="fields" style="max-width: 620px; margin-bottom: 24px">
+    <div class="field">
+      <label for="search-player">Znajdź zawodnika</label
+      ><input
+        id="search-player"
+        type="search"
+        placeholder="Imię lub nazwisko"
+        [ngModel]="query()"
+        (ngModelChange)="query.set($event)"
+      />
+    </div>
+    <div class="field">
+      <label for="country">Kraj</label
+      ><select id="country" [ngModel]="country()" (ngModelChange)="country.set($event)">
+        <option value="">Wszystkie</option>
+        @for (code of countries(); track code) {
+          <option [value]="code">{{ code }}</option>
+        }
+      </select>
+    </div>
+  </div>
+  @if (loading()) {
+    <div class="skeleton" style="height: 260px" aria-label="Ładowanie zawodników"></div>
+  } @else {
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>ATP</th>
+            <th>Zawodnik</th>
+            <th>Kraj</th>
+            <th>Data rankingu</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (player of filtered(); track player.id) {
+            <tr>
+              <td>{{ player.position }}</td>
+              <td>
+                <strong>{{ player.name }}</strong>
+              </td>
+              <td>{{ player.countryCode || '—' }}</td>
+              <td>{{ player.rankingDate | date: 'dd.MM.yyyy' }}</td>
+              <td><a routerLink="/match" [queryParams]="{ a: player.id }">Porównaj</a></td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="5" class="empty">Brak zawodników spełniających warunki.</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+  <p class="muted">
+    To zapis danych historycznych, a nie ranking na żywo. Data przy zawodniku określa obserwację
+    używaną do predykcji.
+  </p>
+</section>
