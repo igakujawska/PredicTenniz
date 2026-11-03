@@ -1,0 +1,78 @@
+<div class="page-heading">
+  <div>
+    <h1>Modele i ocena</h1>
+    <p class="muted">Wyniki eksperymentu przechowywane wraz z wersją modelu w serwisie Python.</p>
+  </div>
+</div>
+@if (error()) {
+  <div class="error" role="alert">{{ error() }}</div>
+}
+@for (model of models(); track model.version) {
+  <section class="panel" style="margin-bottom: 20px">
+    <div class="panel-heading">
+      <h2>{{ model.label }}</h2>
+      <code class="muted">{{ model.version }}</code>
+    </div>
+    @if (model.trained) {
+      <p class="muted">
+        Trening do {{ model.trainedThrough | date: 'dd.MM.yyyy' }} · test: sezon
+        {{ model.testYear }}, {{ model.testMatches }} meczów.
+      </p>
+    } @else {
+      <p class="muted">
+        Heurystyka oparta na stosunku rankingów. Punkt odniesienia dla modelu uczonego z danych. Nie
+        reaguje na zmianę nawierzchni ani formatu.
+      </p>
+    }
+    @if (model.metrics; as metrics) {
+      <div class="table-wrap" style="margin-top: 20px">
+        <table>
+          <thead>
+            <tr>
+              <th>Metoda</th>
+              <th class="number">Log loss ↓</th>
+              <th class="number">Brier score ↓</th>
+              <th class="number">Trafność ↑</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Regresja logistyczna</td>
+              <td class="number">{{ metrics.ml.logLoss | number: '1.4-4' }}</td>
+              <td class="number">{{ metrics.ml.brierScore | number: '1.4-4' }}</td>
+              <td class="number">{{ metrics.ml.accuracy * 100 | number: '1.2-2' }}%</td>
+            </tr>
+            <tr>
+              <td>Ranking bazowy</td>
+              <td class="number">{{ metrics.baseline.logLoss | number: '1.4-4' }}</td>
+              <td class="number">{{ metrics.baseline.brierScore | number: '1.4-4' }}</td>
+              <td class="number">{{ metrics.baseline.accuracy * 100 | number: '1.2-2' }}%</td>
+            </tr>
+            <tr>
+              <td>50 / 50</td>
+              <td class="number">{{ metrics.coinFlip.logLoss | number: '1.4-4' }}</td>
+              <td class="number">{{ metrics.coinFlip.brierScore | number: '1.4-4' }}</td>
+              <td class="number">{{ metrics.coinFlip.accuracy * 100 | number: '1.2-2' }}%</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="notice" style="margin-top: 20px">
+        Przewaga nad rankingiem jest niewielka. Wynik na jednym sezonie nie potwierdza skuteczności
+        na przyszłych meczach.
+      </p>
+    }
+  </section>
+}
+<section class="panel">
+  <h2>Co model bierze pod uwagę?</h2>
+  <p>
+    Obecna regresja wykorzystuje różnicę logarytmów rankingów, nawierzchnię i format meczu. Nie zna
+    kontuzji, bieżącej formy ani zmęczenia. Szansa na tytuł uwzględnia wszystkich możliwych rywali w
+    drabince, ale nadal zależy od tych ograniczonych danych.
+  </p>
+  <p class="muted">
+    Dokumentacja treningu i pochodzenia danych znajduje się w folderze ml repozytorium. Kolejny etap
+    badawczy to porównanie z modelem uwzględniającym historię wyników.
+  </p>
+</section>
