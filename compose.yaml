@@ -18,5 +18,39 @@ services:
       retries: 10
       start_period: 10s
 
+  ml:
+    profiles: [full]
+    build:
+      context: .
+      dockerfile: ml/Dockerfile
+    ports:
+      - '127.0.0.1:8001:8000'
+
+  backend:
+    profiles: [full]
+    build: .
+    environment:
+      SPRING_DOCKER_COMPOSE_ENABLED: 'false'
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:?Set POSTGRES_DB in .env}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:?Set POSTGRES_USER in .env}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      TENNIS_ML_BASE_URL: http://ml:8000
+    ports:
+      - '127.0.0.1:8080:8080'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      ml:
+        condition: service_healthy
+
+  frontend:
+    profiles: [full]
+    build: ./frontend
+    ports:
+      - '127.0.0.1:4200:80'
+    depends_on:
+      backend:
+        condition: service_healthy
+
 volumes:
   postgres_data:
