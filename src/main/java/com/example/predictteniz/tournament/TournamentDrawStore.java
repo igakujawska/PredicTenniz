@@ -21,21 +21,21 @@ public class TournamentDrawStore {
 
     public List<TournamentService.DrawSummary> recent() {
         return draws.findTop20ByOrderByCreatedAtDesc().stream().map(draw ->
-            new TournamentService.DrawSummary(draw.getId(), draw.getTitle(), draw.getAsOf(), draw.getPlayerIds().size())).toList();
+            new TournamentService.DrawSummary(draw.getId(), draw.getTitle(), draw.getAsOf(), (int)draw.getPlayerIds().stream().filter(java.util.Objects::nonNull).count())).toList();
     }
 
     @Transactional
-    public StoredDraw create(String title, LocalDate asOf, List<Long> ids, MatchConditions conditions, String modelVersion) {
-        return snapshot(draws.saveAndFlush(new TournamentDraw(title, asOf, ids, conditions, modelVersion)));
+    public StoredDraw create(String title, LocalDate asOf, List<Long> ids, MatchConditions conditions, String modelVersion, TournamentFormat formatCode) {
+        return snapshot(draws.saveAndFlush(new TournamentDraw(title, asOf, ids, conditions, modelVersion, formatCode)));
     }
 
     @Transactional
     public StoredDraw update(UUID id, Long version, String title, LocalDate asOf, List<Long> ids,
-                             MatchConditions conditions, String modelVersion) {
+                             MatchConditions conditions, String modelVersion, TournamentFormat formatCode) {
         var draw = find(id);
         if (version == null || draw.getVersion() != version)
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Turniej zmienił się od odczytu. Otwórz go ponownie albo zapisz kopię.");
-        draw.revise(title, asOf, ids, conditions, modelVersion);
+        draw.revise(title, asOf, ids, conditions, modelVersion, formatCode);
         return snapshot(draws.saveAndFlush(draw));
     }
 
@@ -45,9 +45,9 @@ public class TournamentDrawStore {
 
     private StoredDraw snapshot(TournamentDraw draw) {
         return new StoredDraw(draw.getId(), draw.getTitle(), draw.getAsOf(), draw.getCreatedAt(), draw.getVersion(),
-            draw.getPlayerIds(), draw.getConditions(), draw.getModelVersion());
+            draw.getPlayerIds(), draw.getConditions(), draw.getModelVersion(), draw.getFormatCode());
     }
 
     public record StoredDraw(UUID id, String title, LocalDate asOf, Instant createdAt, long version,
-                             List<Long> playerIds, MatchConditions conditions, String modelVersion) {}
+                             List<Long> playerIds, MatchConditions conditions, String modelVersion, TournamentFormat formatCode) {}
 }

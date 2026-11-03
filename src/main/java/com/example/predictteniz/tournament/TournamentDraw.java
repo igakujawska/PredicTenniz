@@ -37,10 +37,14 @@ public class TournamentDraw {
     @Column(name = "best_of", nullable = false) private int bestOf;
     @Column(name = "model_version", nullable = false, length = 64) private String modelVersion;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "format_code", nullable = false) private TournamentFormat formatCode = TournamentFormat.CUSTOM;
+    @Column(name = "slot_count", nullable = false) private int slotCount;
+
     @ElementCollection
     @CollectionTable(name = "tournament_entries", joinColumns = @JoinColumn(name = "tournament_id"))
     @OrderColumn(name = "slot")
-    @Column(name = "player_id", nullable = false)
+    @Column(name = "player_id")
     private List<Long> playerIds = new ArrayList<>();
 
     public TournamentDraw(String title, LocalDate asOf, List<Long> playerIds) {
@@ -48,6 +52,12 @@ public class TournamentDraw {
     }
 
     public TournamentDraw(String title, LocalDate asOf, List<Long> playerIds, MatchConditions conditions, String modelVersion) {
+        this(title, asOf, playerIds, conditions, modelVersion, TournamentFormat.CUSTOM);
+    }
+
+    public TournamentDraw(String title, LocalDate asOf, List<Long> playerIds, MatchConditions conditions, String modelVersion, TournamentFormat formatCode) {
+        this.formatCode = formatCode;
+        this.slotCount = playerIds.size();
         this.surface = conditions.surface();
         this.bestOf = conditions.bestOf();
         this.modelVersion = modelVersion;
@@ -58,7 +68,9 @@ public class TournamentDraw {
         this.createdAt = Instant.now();
     }
 
-    public void revise(String title, LocalDate asOf, List<Long> ids, MatchConditions conditions, String modelVersion) {
+    public void revise(String title, LocalDate asOf, List<Long> ids, MatchConditions conditions, String modelVersion, TournamentFormat formatCode) {
+        this.formatCode = formatCode;
+        this.slotCount = ids.size();
         this.title = title;
         this.asOf = asOf;
         this.surface = conditions.surface();
@@ -68,7 +80,11 @@ public class TournamentDraw {
         this.playerIds.addAll(ids);
     }
 
-    public MatchConditions getConditions() { return new MatchConditions(surface, bestOf); }
+    public MatchConditions getConditions() { return new MatchConditions(surface, bestOf, formatCode.getCategory()); }
 
-    public List<Long> getPlayerIds() { return List.copyOf(playerIds); }
+    public List<Long> getPlayerIds() {
+        var slots = new ArrayList<>(playerIds);
+        while (slots.size() < slotCount) slots.add(null);
+        return java.util.Collections.unmodifiableList(slots);
+    }
 }
