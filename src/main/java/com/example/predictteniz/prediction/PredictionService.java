@@ -26,7 +26,6 @@ public class PredictionService {
     private final PlayerRepository players;
     private final PlayerRankingRepository rankings;
     private final PlayerExternalIdRepository identities;
-    private final WinProbabilityModel model;
 
     public List<RankedPlayer> snapshots(List<Long> ids, LocalDate asOf) {
         var profiles = players.findAllById(ids).stream().collect(Collectors.toMap(Player::getId, Function.identity()));
@@ -50,7 +49,7 @@ public class PredictionService {
             .map(ranking -> snapshot(ranking.getPlayer(), ranking, sourceIds.get(ranking.getPlayer().getId())))
             .sorted(Comparator.comparingInt(RankedPlayer::position).thenComparingLong(RankedPlayer::id)).toList();
         LocalDate latest = result.stream().map(RankedPlayer::rankingDate).max(LocalDate::compareTo).orElse(null);
-        return new Catalog(result, latest, model.version());
+        return new Catalog(result, latest, "ranking-baseline-v1");
     }
 
     private Map<Long, String> sourceIds() {

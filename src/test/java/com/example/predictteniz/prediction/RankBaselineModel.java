@@ -1,9 +1,7 @@
 package com.example.predictteniz.prediction;
 
-import org.springframework.stereotype.Component;
 
-/** A transparent heuristic; its probabilities have not been fitted or calibrated on match outcomes. */
-@Component
+/** Deterministic fixture for bracket mathematics. Production models run in Python. */
 public class RankBaselineModel implements WinProbabilityModel {
     @Override
     public String version() { return "ranking-baseline-v1"; }

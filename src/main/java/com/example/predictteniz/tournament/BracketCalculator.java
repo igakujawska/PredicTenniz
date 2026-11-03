@@ -1,6 +1,5 @@
 package com.example.predictteniz.tournament;
 
-import lombok.RequiredArgsConstructor;
 
 import com.example.predictteniz.prediction.MatchConditions;
 import com.example.predictteniz.prediction.MatchPair;
@@ -15,15 +14,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
 public class BracketCalculator {
-    private final WinProbabilityModel model;
-
-    public Forecast calculate(List<RankedPlayer> players) {
-        return calculate(players, model, MatchConditions.DEFAULT);
-    }
-
     public Forecast calculate(List<RankedPlayer> players, WinProbabilityModel selected, MatchConditions conditions) {
         int size = players.size();
         if (size < 2 || size > 16 || (size & (size - 1)) != 0
