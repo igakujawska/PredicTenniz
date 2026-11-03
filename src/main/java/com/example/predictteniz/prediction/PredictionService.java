@@ -1,5 +1,7 @@
 package com.example.predictteniz.prediction;
 
+import lombok.RequiredArgsConstructor;
+
 import com.example.predictteniz.player.Player;
 import com.example.predictteniz.player.PlayerRanking;
 import com.example.predictteniz.player.PlayerRankingRepository;
@@ -14,18 +16,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+@RequiredArgsConstructor
 @Service
 @Transactional(readOnly = true)
 public class PredictionService {
     private final PlayerRepository players;
     private final PlayerRankingRepository rankings;
     private final WinProbabilityModel model;
-
-    public PredictionService(PlayerRepository players, PlayerRankingRepository rankings, WinProbabilityModel model) {
-        this.players = players;
-        this.rankings = rankings;
-        this.model = model;
-    }
 
     public List<RankedPlayer> snapshots(List<Long> ids, LocalDate asOf) {
         return ids.stream().map(id -> {

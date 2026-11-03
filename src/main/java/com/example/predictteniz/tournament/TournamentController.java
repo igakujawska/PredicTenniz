@@ -1,5 +1,7 @@
 package com.example.predictteniz.tournament;
 
+import lombok.RequiredArgsConstructor;
+
 import com.example.predictteniz.prediction.PredictionService;
 import com.example.predictteniz.prediction.PredictionModels;
 import com.example.predictteniz.prediction.MatchConditions;
@@ -23,18 +25,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+@RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/tournaments")
 public class TournamentController {
     private final TournamentService tournaments;
     private final PredictionService predictions;
     private final PredictionModels models;
-
-    public TournamentController(TournamentService tournaments, PredictionService predictions, PredictionModels models) {
-        this.tournaments = tournaments;
-        this.predictions = predictions;
-        this.models = models;
-    }
 
     @GetMapping("/models")
     public List<Map<String, Object>> models() { return models.descriptions(); }

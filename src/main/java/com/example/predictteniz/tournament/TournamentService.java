@@ -1,5 +1,7 @@
 package com.example.predictteniz.tournament;
 
+import lombok.RequiredArgsConstructor;
+
 import com.example.predictteniz.prediction.MatchConditions;
 import com.example.predictteniz.prediction.PredictionModels;
 import com.example.predictteniz.prediction.PredictionService;
@@ -12,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+@RequiredArgsConstructor
 @Service
 @Transactional(readOnly = true)
 public class TournamentService {
@@ -19,14 +22,6 @@ public class TournamentService {
     private final PredictionService predictions;
     private final BracketCalculator calculator;
     private final PredictionModels models;
-
-    public TournamentService(TournamentDrawRepository draws, PredictionService predictions,
-                             BracketCalculator calculator, PredictionModels models) {
-        this.draws = draws;
-        this.predictions = predictions;
-        this.calculator = calculator;
-        this.models = models;
-    }
 
     public DrawResponse preview(String title, LocalDate asOf, List<Long> playerIds,
                                 MatchConditions.Surface surface, Integer bestOf, String version) {
