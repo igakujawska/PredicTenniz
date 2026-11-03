@@ -1,6 +1,14 @@
 package com.example.predictteniz.tournament;
 
 import com.example.predictteniz.player.*;
+import com.example.predictteniz.prediction.ml.MlClient;
+import com.example.predictteniz.prediction.ml.MlContract;
+import org.junit.jupiter.api.BeforeEach;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.http.HttpStatus;
+import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.*;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
@@ -24,10 +32,26 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @Transactional
 class TournamentApiTest {
+    @MockitoBean MlClient ml;
     @Autowired MockMvc mvc;
     @Autowired PlayerRepository players;
     @Autowired PlayerRankingRepository rankings;
     @Autowired TournamentDrawRepository draws;
+
+    @BeforeEach
+    void configurePythonBoundary() {
+        when(ml.models()).thenReturn(List.of(
+            MlContract.ModelInfo.builder().version("ranking-baseline-v1").label("Ranking").trained(false).build(),
+            MlContract.ModelInfo.builder().version("rank-logistic-v1").label("ML").trained(true)
+                .trainedThrough(LocalDate.of(2024, 12, 31)).testYear(2025).testMatches(2483).build()));
+        when(ml.predict(any())).thenAnswer(invocation -> {
+            MlContract.Batch request = invocation.getArgument(0);
+            if (request.modelVersion().equals("rank-logistic-v1") && request.asOf().isBefore(LocalDate.of(2024, 12, 31)))
+                throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "Model ML został wytrenowany na nowszych danych.");
+            return new MlContract.BatchResult(request.modelVersion(), request.asOf(), request.surface(), request.bestOf(),
+                request.pairs().stream().map(pair -> new MlContract.Outcome(pair.playerAId(), pair.playerBId(), 0.8, 0.2)).toList());
+        });
+    }
 
     private List<Long> rankedPair() {
         var a = players.save(new Player("A", "Test", "POL", null));
@@ -94,7 +118,10 @@ class TournamentApiTest {
 
     @Test
     void modelTrainedInTheFutureCannotBeUsedInHistoricalForecast() throws Exception {
-        String request = body(rankedPair()).replace("2026-06-08", "2024-06-08")
+        var ids = rankedPair();
+        for (long id : ids) rankings.save(new PlayerRanking(players.findById(id).orElseThrow(), RankingTour.ATP,
+            LocalDate.of(2024, 6, 1), 8, 100, "TEST", Instant.now()));
+        String request = body(ids).replace("2026-06-08", "2024-06-08")
             .replace("\"playerIds\"", "\"modelVersion\":\"rank-logistic-v1\",\"playerIds\"");
         mvc.perform(post("/api/tournaments/preview").with(csrf()).contentType(MediaType.APPLICATION_JSON).content(request))
             .andExpect(status().isUnprocessableEntity())
@@ -110,5 +137,25 @@ class TournamentApiTest {
         mvc.perform(post("/api/tournaments").with(csrf()).contentType(MediaType.APPLICATION_JSON).content(request))
             .andExpect(status().isBadRequest());
         assertThat(draws.count()).isZero();
+    }
+    @Test
+    void pythonOutageDoesNotCreateADraw() throws Exception {
+        doThrow(new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Silnik ML jest niedostępny.")).when(ml).predict(any());
+        mvc.perform(post("/api/tournaments").with(csrf()).contentType(MediaType.APPLICATION_JSON).content(body(rankedPair())))
+            .andExpect(status().isServiceUnavailable());
+        assertThat(draws.count()).isZero();
+    }
+
+    @Test
+    void allSixteenPlayersUseOneBatchOfOneHundredTwentyPairs() throws Exception {
+        var ids = new java.util.ArrayList<Long>();
+        for (int rank = 1; rank <= 16; rank++) {
+            var player = players.save(new Player("Test", "Player " + rank, null, null));
+            rankings.save(new PlayerRanking(player, RankingTour.ATP, LocalDate.of(2026, 6, 8), rank, 100, "TEST", Instant.now()));
+            ids.add(player.getId());
+        }
+        mvc.perform(post("/api/tournaments/preview").with(csrf()).contentType(MediaType.APPLICATION_JSON).content(body(ids)))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.forecast.rounds.length()").value(4));
+        verify(ml, times(1)).predict(argThat(request -> request.pairs().size() == 120));
     }
 }

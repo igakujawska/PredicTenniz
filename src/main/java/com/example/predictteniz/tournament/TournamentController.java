@@ -5,7 +5,7 @@ import lombok.RequiredArgsConstructor;
 import com.example.predictteniz.prediction.PredictionService;
 import com.example.predictteniz.prediction.PredictionModels;
 import com.example.predictteniz.prediction.MatchConditions;
-import java.util.Map;
+import com.example.predictteniz.prediction.ml.MlContract;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -34,7 +34,7 @@ public class TournamentController {
     private final PredictionModels models;
 
     @GetMapping("/models")
-    public List<Map<String, Object>> models() { return models.descriptions(); }
+    public List<MlContract.ModelInfo> models() { return models.descriptions(); }
 
     @GetMapping("/players")
     public PredictionService.Catalog players(@RequestParam(required = false) LocalDate asOf) {

@@ -3,6 +3,7 @@ package com.example.predictteniz.tournament;
 import lombok.RequiredArgsConstructor;
 
 import com.example.predictteniz.prediction.MatchConditions;
+import com.example.predictteniz.prediction.MatchPair;
 import com.example.predictteniz.prediction.PredictionService.RankedPlayer;
 import com.example.predictteniz.prediction.WinProbabilityModel;
 import java.util.ArrayList;
@@ -74,7 +75,7 @@ public class BracketCalculator {
     }
 
     private double probability(RankedPlayer a, RankedPlayer b, WinProbabilityModel selected, MatchConditions conditions) {
-        double probability = selected.probability(a.position(), b.position(), conditions);
+        double probability = selected.probability(new MatchPair(a.id(), b.id(), a.position(), b.position(), conditions));
         if (!Double.isFinite(probability) || probability < 0 || probability > 1)
             throw new IllegalStateException("Model returned an invalid probability.");
         return probability;

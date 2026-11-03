@@ -1,32 +1,33 @@
 package com.example.predictteniz.prediction;
 
-import lombok.RequiredArgsConstructor;
-
+import com.example.predictteniz.prediction.ml.CachedPairModel;
+import com.example.predictteniz.prediction.ml.MlClient;
+import com.example.predictteniz.prediction.ml.MlContract;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import org.springframework.http.HttpStatus;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-import org.springframework.web.server.ResponseStatusException;
 
-@RequiredArgsConstructor
 @Component
+@RequiredArgsConstructor
 public class PredictionModels {
-    private final RankBaselineModel baseline;
-    private final TrainedLogisticModel trained = new TrainedLogisticModel();
+    private final MlClient client;
 
-    public WinProbabilityModel resolve(String version, LocalDate asOf) {
-        if (version == null || version.equals(baseline.version())) return baseline;
-        if (!version.equals(trained.version()))
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Nieznana wersja modelu.");
-        if (asOf.isBefore(trained.trainedThrough()))
-            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
-                "Model ML jest wytrenowany na danych do " + trained.trainedThrough() + ". Wybierz późniejszą datę lub model bazowy.");
-        return trained;
+    public WinProbabilityModel prepare(String version, LocalDate asOf, List<PredictionService.RankedPlayer> players,
+                                       MatchConditions conditions) {
+        String selected = version == null ? "ranking-baseline-v1" : version;
+        var pairs = new ArrayList<MlContract.Pair>();
+        for (int i = 0; i < players.size(); i++) {
+            for (int j = i + 1; j < players.size(); j++) {
+                var a = players.get(i);
+                var b = players.get(j);
+                pairs.add(new MlContract.Pair(a.id(), b.id(), a.position(), b.position(), a.sourceId(), b.sourceId()));
+            }
+        }
+        var request = new MlContract.Batch(selected, asOf, conditions.surface().name(), conditions.bestOf(), List.copyOf(pairs));
+        return CachedPairModel.from(request, client.predict(request));
     }
 
-    public List<Map<String, Object>> descriptions() {
-        return List.of(Map.of("version", baseline.version(), "label", "Ranking · bazowy", "trained", false),
-            trained.description());
-    }
+    public List<MlContract.ModelInfo> descriptions() { return client.models(); }
 }

@@ -27,8 +27,9 @@ public class TournamentService {
                                 MatchConditions.Surface surface, Integer bestOf, String version) {
         validate(title, asOf, playerIds);
         var conditions = conditions(surface, bestOf);
-        var model = models.resolve(version, asOf);
-        var forecast = calculator.calculate(predictions.snapshots(playerIds, asOf), model, conditions);
+        var snapshots = predictions.snapshots(playerIds, asOf);
+        var model = models.prepare(version, asOf, snapshots, conditions);
+        var forecast = calculator.calculate(snapshots, model, conditions);
         return new DrawResponse(null, title.strip(), asOf, null, forecast);
     }
 
@@ -44,8 +45,9 @@ public class TournamentService {
     public DrawResponse get(UUID id) {
         var draw = draws.findById(id).orElseThrow(() ->
             new ResponseStatusException(HttpStatus.NOT_FOUND, "Nie znaleziono drabinki."));
-        var model = models.resolve(draw.getModelVersion(), draw.getAsOf());
-        var forecast = calculator.calculate(predictions.snapshots(draw.getPlayerIds(), draw.getAsOf()), model, draw.getConditions());
+        var snapshots = predictions.snapshots(draw.getPlayerIds(), draw.getAsOf());
+        var model = models.prepare(draw.getModelVersion(), draw.getAsOf(), snapshots, draw.getConditions());
+        var forecast = calculator.calculate(snapshots, model, draw.getConditions());
         return new DrawResponse(draw.getId(), draw.getTitle(), draw.getAsOf(), draw.getCreatedAt(), forecast);
     }
 
