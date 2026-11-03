@@ -3,9 +3,11 @@
 Aplikacja do analizy drabinek ATP: ustaw pary, porównaj modele dla jednego meczu, sprawdź wszystkie możliwe drogi do tytułu i zapisz turniej. Projekt rozwijany w IntelliJ, z osobnymi aplikacjami Java, Python i Angular w jednym repozytorium.
 
 <details>
-<summary>Podgląd Angulara — ciemny motyw</summary>
+<summary>Podgląd: drabinka szlemowa i ocena modelu XGBoost</summary>
 
-![Drabinka PredictTeniz w niezależnej aplikacji Angular](docs/images/dashboard-angular.jpg)
+![Pełna drabinka szlemowa 128 zawodników](docs/images/dashboard-slam128.jpg)
+
+![Ocena modelu XGBoost na wspólnym sezonie testowym](docs/images/models-xgboost.jpg)
 
 </details>
 

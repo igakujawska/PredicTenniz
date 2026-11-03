@@ -89,6 +89,8 @@ Wyniki trafiają do `target/ml/form-v2/`. Model aplikacji nie jest automatycznie
 
 Wersja v2 wyklucza dodatkowo wydarzenia drużynowe, Olympics i NextGen, stąd inny rozmiar testu niż w v1. [Mapowanie kategorii i zmiany w czasie](CATEGORIES.md) opisuje m.in. awanse Dallas, Doha i Munich od 2025 oraz wyjątek Astany w 2022. Testy XGBoost i starej regresji w powyższej tabeli dotyczą dokładnie tych samych meczów.
 
+Cechy meczów z sezonu testowego mogą korzystać z wcześniejszych wyników tego samego sezonu, jeżeli stały się dostępne przed analizowanym meczem. Wagi modelu pozostają zamrożone; jest to odtwarzanie kolejnych prognoz w czasie.
+
 Mirroring w treningu nie gwarantuje symetrii drzew. Dlatego serwowanie jawnie stosuje `P(A,B) = (f(A,B) + 1 - f(B,A))/2`; zamiana stron daje dopełnienie. Paczka maksymalnie 8128 par jest przetwarzana wektorowo. Historia jest buforowana osobno dla dat zapytań.
 
 Raport zawiera kalibrację, wyniki według kategorii, udziały gain cech i sparowany bootstrap różnicy log loss. Ten ostatni zakłada niezależność meczów; powiązania graczy i turniejów ograniczają jego interpretację. Nie stanowi potwierdzenia przewagi na przyszłych sezonach. Gain nie jest wpływem przyczynowym ani wyjaśnieniem pojedynczej prognozy. Historia obejmuje główny ATP Tour; dla wielu słabiej notowanych graczy jest uboga, a neutralne wartości nie zastępują brakujących wyników Challengerów.
