@@ -1,0 +1,344 @@
+{
+  "schemaVersion": 2,
+  "version": "form-xgboost-v2",
+  "label": "XGBoost \u00b7 Elo i forma",
+  "trainedThrough": "2024-12-31",
+  "dataThrough": "2026-06-08",
+  "testYear": 2025,
+  "testMatches": 2474,
+  "trainMatches": 10166,
+  "historyMatches": 20342,
+  "featureNames": [
+    "log_rank_ratio",
+    "elo_difference",
+    "surface_elo_difference",
+    "form_90_difference",
+    "surface_form_180_difference",
+    "win_rate_365_difference",
+    "experience_365_difference",
+    "head_to_head_advantage",
+    "best_of_five",
+    "clay",
+    "grass",
+    "atp_500",
+    "masters_1000",
+    "grand_slam",
+    "finals"
+  ],
+  "historyFile": "history-v2.json.gz",
+  "historySha256": "7849a90ec8df2cd1358183a76512089ab69ef00f2d602287ed6e243adece3b3a",
+  "modelFile": "form-xgboost-v2.ubj",
+  "modelSha256": "c1e81fb57ab83b9d70abdc4c0c1b59b1e4e06ffca7520194615af36630f0ab1a",
+  "metrics": {
+    "ml": {
+      "logLoss": 0.6158253922902063,
+      "brierScore": 0.21423800526638223,
+      "accuracy": 0.6463217461600647
+    },
+    "baseline": {
+      "logLoss": 0.6273769736289978,
+      "brierScore": 0.21906884014606476,
+      "accuracy": 0.6499595796281326
+    },
+    "coinFlip": {
+      "logLoss": 0.6931471805599453,
+      "brierScore": 0.25,
+      "accuracy": 0.5
+    },
+    "logistic": {
+      "logLoss": 0.6263286471366882,
+      "brierScore": 0.21872305870056152,
+      "accuracy": 0.6499595796281326
+    },
+    "elo": {
+      "logLoss": 0.627050532308652,
+      "brierScore": 0.21900813537846728,
+      "accuracy": 0.6370250606305577
+    }
+  },
+  "categoryScores": {
+    "ATP_250": {
+      "matches": 746,
+      "model": {
+        "logLoss": 0.650937355530839,
+        "brierScore": 0.22987264580164657,
+        "accuracy": 0.5924932975871313
+      },
+      "ranking": {
+        "logLoss": 0.6652427911758423,
+        "brierScore": 0.23644880950450897,
+        "accuracy": 0.596514745308311
+      }
+    },
+    "ATP_500": {
+      "matches": 489,
+      "model": {
+        "logLoss": 0.591059641929557,
+        "brierScore": 0.20290239592133208,
+        "accuracy": 0.6850715746421268
+      },
+      "ranking": {
+        "logLoss": 0.6036009788513184,
+        "brierScore": 0.20809178054332733,
+        "accuracy": 0.6871165644171779
+      }
+    },
+    "FINALS": {
+      "matches": 30,
+      "model": {
+        "logLoss": 0.529936065630702,
+        "brierScore": 0.17731417291308899,
+        "accuracy": 0.7
+      },
+      "ranking": {
+        "logLoss": 0.5954510569572449,
+        "brierScore": 0.20338447391986847,
+        "accuracy": 0.7
+      }
+    },
+    "GRAND_SLAM": {
+      "matches": 477,
+      "model": {
+        "logLoss": 0.554496159795554,
+        "brierScore": 0.18787455338556053,
+        "accuracy": 0.7253668763102725
+      },
+      "ranking": {
+        "logLoss": 0.5769713521003723,
+        "brierScore": 0.1968809813261032,
+        "accuracy": 0.6834381551362684
+      }
+    },
+    "MASTERS_1000": {
+      "matches": 732,
+      "model": {
+        "logLoss": 0.64007081721996,
+        "brierScore": 0.224569634567165,
+        "accuracy": 0.6215846994535519
+      },
+      "ranking": {
+        "logLoss": 0.6388247609138489,
+        "brierScore": 0.22379082441329956,
+        "accuracy": 0.6557377049180327
+      }
+    }
+  },
+  "calibration": [
+    {
+      "predicted": 0.07776234118994009,
+      "observed": 0.01694915254237288,
+      "observations": 59
+    },
+    {
+      "predicted": 0.15233624165548998,
+      "observed": 0.18235294117647058,
+      "observations": 340
+    },
+    {
+      "predicted": 0.25020964870930196,
+      "observed": 0.27565392354124746,
+      "observations": 497
+    },
+    {
+      "predicted": 0.3511358857154846,
+      "observed": 0.3368421052631579,
+      "observations": 570
+    },
+    {
+      "predicted": 0.4577316502848315,
+      "observed": 0.4791666666666667,
+      "observations": 1008
+    },
+    {
+      "predicted": 0.5422683497151685,
+      "observed": 0.5208333333333334,
+      "observations": 1008
+    },
+    {
+      "predicted": 0.6488641142845154,
+      "observed": 0.6631578947368421,
+      "observations": 570
+    },
+    {
+      "predicted": 0.749790351290698,
+      "observed": 0.7243460764587525,
+      "observations": 497
+    },
+    {
+      "predicted": 0.84766375834451,
+      "observed": 0.8176470588235294,
+      "observations": 340
+    },
+    {
+      "predicted": 0.9222376588100599,
+      "observed": 0.9830508474576272,
+      "observations": 59
+    }
+  ],
+  "validationCandidates": [
+    {
+      "parameters": {
+        "max_depth": 2,
+        "n_estimators": 120,
+        "learning_rate": 0.04
+      },
+      "logLoss": 0.6152341536128999,
+      "brierScore": 0.2138476006486337,
+      "accuracy": 0.6493855606758833
+    },
+    {
+      "parameters": {
+        "max_depth": 3,
+        "n_estimators": 160,
+        "learning_rate": 0.04
+      },
+      "logLoss": 0.6135674047640088,
+      "brierScore": 0.21336939601747856,
+      "accuracy": 0.6474654377880185
+    },
+    {
+      "parameters": {
+        "max_depth": 3,
+        "n_estimators": 240,
+        "learning_rate": 0.03
+      },
+      "logLoss": 0.6134920198796971,
+      "brierScore": 0.21335408814859927,
+      "accuracy": 0.6497695852534562
+    }
+  ],
+  "selectedParameters": {
+    "max_depth": 3,
+    "n_estimators": 240,
+    "learning_rate": 0.03
+  },
+  "pairedLogLossDifferenceVsLogistic": {
+    "mean": -0.010503265241607926,
+    "lower95": -0.01729428144238399,
+    "upper95": -0.003879501895120497
+  },
+  "featureImportance": [
+    {
+      "feature": "elo_difference",
+      "gainShare": 0.42287376432883433
+    },
+    {
+      "feature": "log_rank_ratio",
+      "gainShare": 0.25947253726128877
+    },
+    {
+      "feature": "surface_elo_difference",
+      "gainShare": 0.09461207936769027
+    },
+    {
+      "feature": "grand_slam",
+      "gainShare": 0.03699378269503961
+    },
+    {
+      "feature": "experience_365_difference",
+      "gainShare": 0.03068548550796604
+    },
+    {
+      "feature": "form_90_difference",
+      "gainShare": 0.026860263758832152
+    },
+    {
+      "feature": "best_of_five",
+      "gainShare": 0.02607568590328465
+    },
+    {
+      "feature": "grass",
+      "gainShare": 0.023172771878672737
+    },
+    {
+      "feature": "head_to_head_advantage",
+      "gainShare": 0.02014868111941479
+    },
+    {
+      "feature": "masters_1000",
+      "gainShare": 0.017885002710262075
+    },
+    {
+      "feature": "win_rate_365_difference",
+      "gainShare": 0.01688906135173653
+    },
+    {
+      "feature": "clay",
+      "gainShare": 0.013279778775861761
+    },
+    {
+      "feature": "surface_form_180_difference",
+      "gainShare": 0.011051105341116307
+    }
+  ],
+  "dataQuality": {
+    "read": 23270,
+    "accepted_for_history": 20342,
+    "unfinished": 715,
+    "excluded_level": 1778,
+    "excluded_nonstandard_competition": 435
+  },
+  "source": {
+    "compiler": "Jeff Sackmann",
+    "mirror": "Aneeshers/tennis-sackmann-archive",
+    "revision": "83733587353df8a41f2fd4f516147d5aa83f5a8d",
+    "license": "CC BY-NC-SA 4.0",
+    "files": [
+      {
+        "file": "atp_matches_2018.csv",
+        "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/83733587353df8a41f2fd4f516147d5aa83f5a8d/atp/atp_matches_2018.csv",
+        "sha256": "0363dc6012190f337fcf34b4ca443634f192c4670cc6c14c94342a54b9adf7eb"
+      },
+      {
+        "file": "atp_matches_2019.csv",
+        "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/83733587353df8a41f2fd4f516147d5aa83f5a8d/atp/atp_matches_2019.csv",
+        "sha256": "7f1a21451ff622bb0c6a09690898db46d51e59dcdf08086d369753822e1d5478"
+      },
+      {
+        "file": "atp_matches_2020.csv",
+        "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/83733587353df8a41f2fd4f516147d5aa83f5a8d/atp/atp_matches_2020.csv",
+        "sha256": "985a917b72d5efb7dd5ef9df8ecc58c637ed6b88561ccad364653af71ac12da0"
+      },
+      {
+        "file": "atp_matches_2021.csv",
+        "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/83733587353df8a41f2fd4f516147d5aa83f5a8d/atp/atp_matches_2021.csv",
+        "sha256": "b9b1d31a4b0b9273b8f338cbb1347c5a847ad2361334ec760a286f5990fba347"
+      },
+      {
+        "file": "atp_matches_2022.csv",
+        "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/83733587353df8a41f2fd4f516147d5aa83f5a8d/atp/atp_matches_2022.csv",
+        "sha256": "7190042565ab8400e74f44fda60700acb36ddf3c82d393f331a07589e05b5f52"
+      },
+      {
+        "file": "atp_matches_2023.csv",
+        "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/83733587353df8a41f2fd4f516147d5aa83f5a8d/atp/atp_matches_2023.csv",
+        "sha256": "9b9671aa7c8156e74c2e4466675b7ed4e762bb8a58b7237a30daefd84ffceff5"
+      },
+      {
+        "file": "atp_matches_2024.csv",
+        "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/83733587353df8a41f2fd4f516147d5aa83f5a8d/atp/atp_matches_2024.csv",
+        "sha256": "73aec32247a0db68d8aa8fd8003eefea132905177f1cb145502d9215b53311be"
+      },
+      {
+        "file": "atp_matches_2025.csv",
+        "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/83733587353df8a41f2fd4f516147d5aa83f5a8d/atp/atp_matches_2025.csv",
+        "sha256": "78c356ef9328b89ae58a17564d61c02cdad2a3a007f6b8af5cfc17992b11bb2d"
+      },
+      {
+        "file": "atp_matches_2026.csv",
+        "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/83733587353df8a41f2fd4f516147d5aa83f5a8d/atp/atp_matches_2026.csv",
+        "sha256": "ceb157ae698f79f4148f7bb6253bbcf6a8c8eb9ff94670dd83aa0428802cfd59"
+      }
+    ]
+  },
+  "availabilityAssumptionDays": 21,
+  "runtime": {
+    "xgboost": "3.4.1"
+  },
+  "notes": [
+    "Gains describe the fitted trees, not causal effects.",
+    "Historical availability uses a conservative 21-day embargo after event start.",
+    "TOUR uses no category indicator; select a known tournament format for category context.",
+    "Test results are retrospective, not a guarantee of future performance."
+  ]
+}
