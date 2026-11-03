@@ -1,5 +1,7 @@
 package com.example.predictteniz.player.importing;
 
+import lombok.RequiredArgsConstructor;
+
 import com.example.predictteniz.player.Player;
 import com.example.predictteniz.player.PlayerExternalId;
 import com.example.predictteniz.player.PlayerExternalIdRepository;
@@ -9,15 +11,11 @@ import java.util.Locale;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@RequiredArgsConstructor
 @Service
 public class PlayerImportService {
     private final PlayerRepository players;
     private final PlayerExternalIdRepository externalIds;
-
-    public PlayerImportService(PlayerRepository players, PlayerExternalIdRepository externalIds) {
-        this.players = players;
-        this.externalIds = externalIds;
-    }
 
     @Transactional
     public ImportSummary importPlayers(List<PlayerCsvReader.PlayerRow> rows, String source) {

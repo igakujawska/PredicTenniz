@@ -1,5 +1,7 @@
 package com.example.predictteniz.tournament;
 
+import lombok.RequiredArgsConstructor;
+
 import com.example.predictteniz.prediction.MatchConditions;
 import com.example.predictteniz.prediction.PredictionService.RankedPlayer;
 import com.example.predictteniz.prediction.WinProbabilityModel;
@@ -12,11 +14,10 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Component;
 
+@RequiredArgsConstructor
 @Component
 public class BracketCalculator {
     private final WinProbabilityModel model;
-
-    public BracketCalculator(WinProbabilityModel model) { this.model = model; }
 
     public Forecast calculate(List<RankedPlayer> players) {
         return calculate(players, model, MatchConditions.DEFAULT);

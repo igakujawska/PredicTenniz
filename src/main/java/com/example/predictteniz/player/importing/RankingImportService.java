@@ -1,5 +1,7 @@
 package com.example.predictteniz.player.importing;
 
+import lombok.RequiredArgsConstructor;
+
 import com.example.predictteniz.player.Player;
 import com.example.predictteniz.player.PlayerExternalId;
 import com.example.predictteniz.player.PlayerExternalIdRepository;
@@ -21,16 +23,12 @@ import org.apache.commons.csv.CSVFormat;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@RequiredArgsConstructor
 @Service
 public class RankingImportService {
     private static final String SOURCE = "SACKMANN_ATP";
     private final PlayerExternalIdRepository identities;
     private final PlayerRankingRepository rankings;
-
-    public RankingImportService(PlayerExternalIdRepository identities, PlayerRankingRepository rankings) {
-        this.identities = identities;
-        this.rankings = rankings;
-    }
 
     @Transactional
     public Summary importLatest(Reader input) throws IOException {

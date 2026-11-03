@@ -1,5 +1,7 @@
 package com.example.predictteniz.prediction;
 
+import lombok.RequiredArgsConstructor;
+
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
@@ -7,12 +9,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ResponseStatusException;
 
+@RequiredArgsConstructor
 @Component
 public class PredictionModels {
     private final RankBaselineModel baseline;
     private final TrainedLogisticModel trained = new TrainedLogisticModel();
-
-    public PredictionModels(RankBaselineModel baseline) { this.baseline = baseline; }
 
     public WinProbabilityModel resolve(String version, LocalDate asOf) {
         if (version == null || version.equals(baseline.version())) return baseline;
