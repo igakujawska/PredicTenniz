@@ -25,7 +25,7 @@ public class PredictionModels {
                 pairs.add(new MlContract.Pair(a.id(), b.id(), a.position(), b.position(), a.sourceId(), b.sourceId()));
             }
         }
-        var request = new MlContract.Batch(selected, asOf, conditions.surface().name(), conditions.bestOf(), List.copyOf(pairs));
+        var request = new MlContract.Batch(selected, asOf, conditions.surface().name(), conditions.bestOf(), List.copyOf(pairs), conditions.category());
         return CachedPairModel.from(request, client.predict(request));
     }
 

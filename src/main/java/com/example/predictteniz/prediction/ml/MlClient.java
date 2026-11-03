@@ -36,7 +36,7 @@ public class MlClient {
         try {
             var result = mlRestClient.post().uri("/v1/predict").body(batch).retrieve().body(MlContract.BatchResult.class);
             if (result == null || !batch.modelVersion().equals(result.modelVersion()) || !batch.asOf().equals(result.asOf())
-                    || !batch.surface().equals(result.surface()) || batch.bestOf() != result.bestOf() || result.predictions() == null)
+                    || !batch.surface().equals(result.surface()) || batch.bestOf() != result.bestOf() || !batch.category().equals(result.category()) || result.predictions() == null)
                 throw badResponse();
             return result;
         } catch (RestClientException error) {
