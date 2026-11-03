@@ -1,5 +1,8 @@
 package com.example.predictteniz.player;
 
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -10,9 +13,11 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Entity
 @Table(name = "player_external_ids")
-public class PlayerExternalId {
+    public class PlayerExternalId {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -27,15 +32,10 @@ public class PlayerExternalId {
     @Column(name = "external_id", nullable = false, length = 100)
     private String externalId;
 
-    protected PlayerExternalId() {}
-
     public PlayerExternalId(Player player, String source, String externalId) {
         this.player = player;
         this.source = source;
         this.externalId = externalId;
     }
 
-    public Player getPlayer() { return player; }
-    public String getSource() { return source; }
-    public String getExternalId() { return externalId; }
 }

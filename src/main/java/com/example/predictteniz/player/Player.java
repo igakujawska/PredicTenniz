@@ -1,5 +1,8 @@
 package com.example.predictteniz.player;
 
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -8,9 +11,11 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.time.LocalDate;
 
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Entity
 @Table(name = "players")
-public class Player {
+    public class Player {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -28,9 +33,6 @@ public class Player {
     @Column(name = "birth_date")
     private LocalDate birthDate;
 
-    protected Player() {
-    }
-
     public Player(String firstName, String lastName, String countryCode, LocalDate birthDate) {
         this.firstName = firstName;
         this.lastName = lastName;
@@ -38,23 +40,4 @@ public class Player {
         this.birthDate = birthDate;
     }
 
-    public Long getId() {
-        return id;
-    }
-
-    public String getFirstName() {
-        return firstName;
-    }
-
-    public String getLastName() {
-        return lastName;
-    }
-
-    public String getCountryCode() {
-        return countryCode;
-    }
-
-    public LocalDate getBirthDate() {
-        return birthDate;
-    }
 }

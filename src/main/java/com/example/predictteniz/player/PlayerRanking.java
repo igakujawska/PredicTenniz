@@ -1,5 +1,8 @@
 package com.example.predictteniz.player;
 
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -14,9 +17,11 @@ import jakarta.persistence.Table;
 import java.time.Instant;
 import java.time.LocalDate;
 
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Entity
 @Table(name = "player_rankings")
-public class PlayerRanking {
+    public class PlayerRanking {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -44,9 +49,6 @@ public class PlayerRanking {
     @Column(name = "retrieved_at", nullable = false)
     private Instant retrievedAt;
 
-    protected PlayerRanking() {
-    }
-
     public PlayerRanking(Player player, RankingTour tour, LocalDate rankingDate,
                          int position, Integer points, String source, Instant retrievedAt) {
         this.player = player;
@@ -58,12 +60,4 @@ public class PlayerRanking {
         this.retrievedAt = retrievedAt;
     }
 
-    public Long getId() { return id; }
-    public Player getPlayer() { return player; }
-    public RankingTour getTour() { return tour; }
-    public LocalDate getRankingDate() { return rankingDate; }
-    public int getPosition() { return position; }
-    public Integer getPoints() { return points; }
-    public String getSource() { return source; }
-    public Instant getRetrievedAt() { return retrievedAt; }
 }
