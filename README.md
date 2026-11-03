@@ -66,9 +66,9 @@ Uruchom polecenia w głównym folderze projektu:
 
 ```powershell
 ./scripts/Prepare-PlayerData.ps1
-$manifest = Get-Content target/import/players-top100.manifest.json | ConvertFrom-Json
+$manifest = Get-Content target/import/players-top500.manifest.json | ConvertFrom-Json
 $jvm = '-Dspring-boot.run.jvmArguments=-Dspring.devtools.restart.enabled=false'
-$profiles = '-Dspring-boot.run.arguments=--spring.profiles.active=player-import --tennis.import.players.path=target/import/players-top100.csv --tennis.import.players.sha256={0} --server.port=0' -f $manifest.selectedCsvSha256
+$profiles = '-Dspring-boot.run.arguments=--spring.profiles.active=player-import --tennis.import.players.path=target/import/players-top500.csv --tennis.import.players.sha256={0} --server.port=0' -f $manifest.selectedCsvSha256
 ./mvnw.cmd spring-boot:run $jvm $profiles
 $rankings = '-Dspring-boot.run.arguments=--spring.profiles.active=ranking-import --tennis.import.rankings.path=target/import/atp_rankings_current.csv --tennis.import.rankings.sha256={0} --server.port=0' -f $manifest.rankingsSha256
 ./mvnw.cmd spring-boot:run $jvm $rankings

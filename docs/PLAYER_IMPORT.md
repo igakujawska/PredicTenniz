@@ -10,7 +10,7 @@ External data license: [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by
 Preserve the source attribution and applicable data terms when redistributing a downloaded or filtered dataset.
 This note describes external data terms; it does not select a license for the application code.
 
-The preparation script selects profiles for up to 100 ranked players from the **last available date in the archive**. The observed snapshot date is **2026-06-08**; it is historical data, not today's live ranking. Ranking positions are used to select profiles and are not imported into `player_rankings` by this workflow.
+The preparation script selects profiles for the top 500 ranked players by default from the **last available date in the archive**. The observed snapshot date is **2026-06-08**; it is historical data, not today's live ranking. Ranking positions are used to select profiles and are not imported into `player_rankings` by this workflow.
 
 ```powershell
 ./scripts/Prepare-PlayerData.ps1
@@ -21,8 +21,8 @@ Downloaded CSVs, the selected sample and a provenance manifest remain in ignored
 ## Import
 
 ```powershell
-$manifest = Get-Content target/import/players-top100.manifest.json | ConvertFrom-Json
-$importArguments = '-Dspring-boot.run.arguments=--spring.profiles.active=player-import --tennis.import.players.path=target/import/players-top100.csv --tennis.import.players.sha256={0} --server.port=0' -f $manifest.selectedCsvSha256
+$manifest = Get-Content target/import/players-top500.manifest.json | ConvertFrom-Json
+$importArguments = '-Dspring-boot.run.arguments=--spring.profiles.active=player-import --tennis.import.players.path=target/import/players-top500.csv --tennis.import.players.sha256={0} --server.port=0' -f $manifest.selectedCsvSha256
 ./mvnw.cmd spring-boot:run '-Dspring-boot.run.jvmArguments=-Dspring.devtools.restart.enabled=false' $importArguments
 ```
 

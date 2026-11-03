@@ -1,4 +1,4 @@
-param([ValidateRange(1, 1000)][int]$Top = 100)
+param([ValidateRange(1, 1000)][int]$Top = 500)
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
 $importDirectory = Join-Path $projectRoot 'target/import'
@@ -17,6 +17,7 @@ foreach ($ranking in $rankings) {
         [void]$selectedIds.Add($ranking.player)
     }
 }
+if ($selectedIds.Count -lt $Top) { throw "The pinned snapshot contains fewer than $Top ranked profiles." }
 $players = @(Import-Csv -LiteralPath $playersPath | Where-Object { $selectedIds.Contains($_.player_id) })
 if ($players.Count -eq 0 -or $players.Count -ne $selectedIds.Count) {
     throw 'Ranking IDs could not be matched unambiguously to player profiles.'
