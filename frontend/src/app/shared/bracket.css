@@ -1,0 +1,98 @@
+.bracket {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(210px, 1fr);
+  gap: 25px;
+  overflow-x: auto;
+  padding-bottom: 15px;
+}
+.round {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.round h3 {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 500;
+  margin-bottom: 13px;
+}
+.round-matches {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  gap: 18px;
+  flex: 1;
+}
+.match-card {
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.match-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  border-radius: 0;
+  padding: 10px;
+  min-height: 56px;
+  font-size: 12px;
+}
+.match-row + .match-row {
+  border-top: 1px solid var(--line);
+}
+.match-row > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.match-row small {
+  display: block;
+  color: var(--muted);
+  font-size: 10px;
+  margin-top: 2px;
+}
+.match-row strong {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+}
+.match-row.winner {
+  background: var(--tint);
+}
+.match-row.winner strong {
+  color: var(--accent);
+  font-weight: 650;
+}
+.match-row.highlighted {
+  box-shadow: inset 3px 0 var(--accent);
+}
+.chances {
+  margin-top: 18px;
+}
+.bar-track {
+  background: var(--line);
+  height: 5px;
+  min-width: 90px;
+  border-radius: 2px;
+  overflow: hidden;
+}
+.bar {
+  background: var(--accent);
+  height: 100%;
+  transition: width 0.18s ease-out;
+}
+@media (max-width: 720px) {
+  .bracket {
+    grid-auto-columns: 205px;
+  }
+  .panel-heading {
+    align-items: start;
+    flex-direction: column;
+    gap: 4px;
+  }
+}

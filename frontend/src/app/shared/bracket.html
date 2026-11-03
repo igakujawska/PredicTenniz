@@ -1,0 +1,86 @@
+<section class="panel">
+  <div class="panel-heading">
+    <h2>Przewidywany przebieg</h2>
+    <span class="muted">Wariant z awansem faworytów</span>
+  </div>
+  <div class="bracket">
+    @for (round of forecast().rounds; track round.number) {
+      <section class="round">
+        <h3>{{ round.name }}</h3>
+        <div class="round-matches">
+          @for (match of round.matches; track $index) {
+            <article class="match-card">
+              <button
+                type="button"
+                class="match-row"
+                [class.winner]="match.predictedWinnerId === match.playerA.id"
+                [class.highlighted]="focused() === match.playerA.id"
+                (mouseenter)="focused.set(match.playerA.id)"
+                (mouseleave)="focused.set(null)"
+                (focus)="focused.set(match.playerA.id)"
+                (blur)="focused.set(null)"
+                title="Podświetl drogę zawodnika"
+              >
+                <span
+                  >{{ match.playerA.name }}<small>ATP {{ match.playerA.position }}</small></span
+                ><strong>{{ match.probabilityA * 100 | number: '1.1-1' }}%</strong>
+              </button>
+              <button
+                type="button"
+                class="match-row"
+                [class.winner]="match.predictedWinnerId === match.playerB.id"
+                [class.highlighted]="focused() === match.playerB.id"
+                (mouseenter)="focused.set(match.playerB.id)"
+                (mouseleave)="focused.set(null)"
+                (focus)="focused.set(match.playerB.id)"
+                (blur)="focused.set(null)"
+                title="Podświetl drogę zawodnika"
+              >
+                <span
+                  >{{ match.playerB.name }}<small>ATP {{ match.playerB.position }}</small></span
+                ><strong>{{ match.probabilityB * 100 | number: '1.1-1' }}%</strong>
+              </button>
+            </article>
+          }
+        </div>
+      </section>
+    }
+  </div>
+  <p class="muted">
+    Procent przy zawodniku dotyczy pokazanego meczu. Rzeczywisty przeciwnik w kolejnej rundzie może
+    być inny.
+  </p>
+</section>
+<section class="panel chances">
+  <div class="panel-heading">
+    <h2>Szansa na tytuł</h2>
+    <span class="muted">Wszystkie możliwe ścieżki</span>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Zawodnik</th>
+          <th>ATP</th>
+          <th>Szansa na wygraną turnieju</th>
+          <th class="number">%</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (chance of forecast().titleChances; track chance.player.id) {
+          <tr>
+            <td>{{ chance.player.name }}</td>
+            <td class="muted">{{ chance.player.position }}</td>
+            <td>
+              <div class="bar-track">
+                <div class="bar" [style.width.%]="chance.probability * 100"></div>
+              </div>
+            </td>
+            <td class="number">{{ chance.probability * 100 | number: '1.1-1' }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+  <p class="muted">Suma szans przed zaokrągleniem wynosi 100%. Są to wyniki wybranego modelu.</p>
+</section>
