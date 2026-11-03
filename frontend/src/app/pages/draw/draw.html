@@ -1,0 +1,163 @@
+<div class="page-heading">
+  <div>
+    <h1>Turniej</h1>
+    <p class="muted">Ustaw pary i sprawdź możliwy przebieg turnieju.</p>
+  </div>
+  <div class="actions">
+    <button type="button" (click)="newDraw()">Nowy</button>
+    @if (saved()?.id) {
+      <button type="button" (click)="save(true)" [disabled]="saving() || loading()">
+        Zapisz kopię
+      </button>
+    }
+    <button
+      type="button"
+      class="primary"
+      (click)="save()"
+      [disabled]="saving() || loading() || !models().length"
+    >
+      {{ saving() ? 'Zapisywanie…' : 'Zapisz turniej' }}
+    </button>
+  </div>
+</div>
+@if (error()) {
+  <div class="error" role="alert">
+    {{ error() }} <button type="button" class="text" (click)="load()">Odśwież dane</button>
+  </div>
+}
+<div class="draw-layout">
+  <aside class="panel settings">
+    <h2>Ustawienia</h2>
+    <div class="fields">
+      <div class="field full">
+        <label for="draw-title">Nazwa turnieju</label
+        ><input
+          id="draw-title"
+          maxlength="100"
+          [(ngModel)]="form.title"
+          (ngModelChange)="changed()"
+        />
+      </div>
+      <div class="field">
+        <label for="draw-size">Liczba graczy</label
+        ><select id="draw-size" [ngModel]="size()" (ngModelChange)="resize($event)">
+          @for (count of [2, 4, 8, 16]; track count) {
+            <option [ngValue]="count">{{ count }}</option>
+          }
+        </select>
+      </div>
+      <div class="field">
+        <label for="draw-date">Dane dostępne do</label
+        ><input
+          id="draw-date"
+          type="date"
+          [max]="today"
+          [ngModel]="form.asOf"
+          (ngModelChange)="setDate($event)"
+        />
+      </div>
+      <div class="field">
+        <label for="surface">Nawierzchnia</label
+        ><select id="surface" [(ngModel)]="form.surface" (ngModelChange)="changed()">
+          <option value="HARD">Hard</option>
+          <option value="CLAY">Clay</option>
+          <option value="GRASS">Grass</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="best-of">Format meczu</label
+        ><select id="best-of" [(ngModel)]="form.bestOf" (ngModelChange)="changed()">
+          <option [ngValue]="3">Best of 3</option>
+          <option [ngValue]="5">Best of 5</option>
+        </select>
+      </div>
+      <div class="field full">
+        <label for="draw-model">Model</label
+        ><select id="draw-model" [(ngModel)]="form.modelVersion" (ngModelChange)="changed()">
+          @for (model of models(); track model.version) {
+            <option [value]="model.version">{{ model.label }}</option>
+          }
+        </select>
+      </div>
+    </div>
+    <div class="slots-heading">
+      <h3>Pary pierwszej rundy</h3>
+      <button type="button" class="text" (click)="shuffle()">Losuj pary</button>
+    </div>
+    <div class="slots">
+      @for (index of slots(); track index) {
+        @if (index % 2 === 0) {
+          <div class="pair-label">Para {{ index / 2 + 1 }}</div>
+        }
+        <div class="slot">
+          <label [for]="'player-' + index">{{ index + 1 }}</label
+          ><select
+            [id]="'player-' + index"
+            [attr.aria-label]="'Zawodnik na miejscu ' + (index + 1)"
+            [(ngModel)]="form.playerIds[index]"
+            (ngModelChange)="changed()"
+          >
+            @for (player of players(); track player.id) {
+              <option [ngValue]="player.id">{{ player.position }}. {{ player.name }}</option>
+            }</select
+          ><button
+            type="button"
+            (click)="move(index, -1)"
+            [disabled]="index === 0"
+            [attr.aria-label]="'Przesuń zawodnika ' + (index + 1) + ' wyżej'"
+          >
+            ↑</button
+          ><button
+            type="button"
+            (click)="move(index, 1)"
+            [disabled]="index === size() - 1"
+            [attr.aria-label]="'Przesuń zawodnika ' + (index + 1) + ' niżej'"
+          >
+            ↓
+          </button>
+        </div>
+      }
+    </div>
+    <div class="file-actions">
+      <label class="file-link" for="draw-import">Wczytaj JSON</label
+      ><input
+        id="draw-import"
+        type="file"
+        accept=".json,application/json"
+        hidden
+        (change)="importFile($event)"
+      /><button type="button" class="text" (click)="exportFile()">Eksportuj JSON</button>
+    </div>
+    <div class="saved-field">
+      <label for="saved-draw">Zapisane turnieje</label
+      ><select id="saved-draw" [ngModel]="saved()?.id || ''" (ngModelChange)="loadSaved($event)">
+        <option value="">Nowa drabinka</option>
+        @for (draw of savedDraws(); track draw.id) {
+          <option [value]="draw.id">{{ draw.title }} · {{ draw.asOf | date: 'dd.MM.yyyy' }}</option>
+        }
+      </select>
+    </div>
+  </aside>
+  <div class="analysis" [attr.aria-busy]="loading()">
+    <div class="analysis-heading">
+      <div>
+        <h2>{{ form.title || 'Prognoza turnieju' }}</h2>
+        <p class="muted">{{ modelLabel() }} · dane do {{ form.asOf | date: 'dd.MM.yyyy' }}</p>
+      </div>
+      <span class="muted">{{
+        loading() ? 'Przeliczanie…' : dirty() ? 'Niezapisany podgląd' : 'Zapisano'
+      }}</span>
+    </div>
+    @if (forecast(); as result) {
+      <div [class.pending]="loading()"><app-bracket [forecast]="result" /></div>
+    } @else if (loading()) {
+      <section class="panel skeleton-layout" aria-label="Ładowanie prognozy">
+        <div class="skeleton"></div>
+        <div class="skeleton"></div>
+        <div class="skeleton"></div>
+      </section>
+    } @else {
+      <section class="panel empty">Wybierz zawodników i model. Prognoza pojawi się tutaj.</section>
+    }
+  </div>
+</div>

@@ -1,0 +1,121 @@
+.draw-layout {
+  display: grid;
+  grid-template-columns: 305px minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+.settings {
+  min-width: 0;
+  padding: 18px;
+}
+.settings > h2 {
+  margin-bottom: 18px;
+}
+.slots-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border-top: 1px solid var(--line);
+  margin-top: 20px;
+  padding-top: 15px;
+}
+.slots-heading h3 {
+  font-size: 12px;
+}
+.slots-heading button {
+  font-size: 11px;
+}
+.pair-label {
+  margin: 15px 0 7px;
+  color: var(--muted);
+  font-size: 11px;
+}
+.slot {
+  display: grid;
+  grid-template-columns: 13px minmax(0, 1fr) 22px 22px;
+  align-items: center;
+  gap: 5px;
+  margin: 6px 0;
+}
+.slot label {
+  margin: 0;
+  font-size: 10px;
+}
+.slot select {
+  font-size: 11px;
+  padding: 8px 4px;
+}
+.slot button {
+  padding: 3px;
+  font-size: 12px;
+}
+.file-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 17px 0;
+  margin-top: 15px;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+.file-link {
+  color: var(--accent);
+  font-size: 12px;
+  cursor: pointer;
+  margin: 0;
+}
+.saved-field {
+  margin-top: 18px;
+}
+.analysis {
+  min-width: 0;
+}
+.analysis-heading {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 3px 0 17px;
+}
+.analysis-heading > span {
+  white-space: nowrap;
+  font-size: 11px;
+}
+.pending {
+  opacity: 0.65;
+}
+.skeleton-layout {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 22px;
+  min-height: 280px;
+  align-items: center;
+}
+.skeleton-layout .skeleton {
+  min-height: 85px;
+}
+@media (max-width: 900px) {
+  .draw-layout {
+    grid-template-columns: 265px minmax(0, 1fr);
+    gap: 18px;
+  }
+  .settings {
+    padding: 15px;
+  }
+}
+@media (max-width: 720px) {
+  .draw-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .analysis-heading {
+    margin-top: 8px;
+  }
+  .slot {
+    grid-template-columns: 16px minmax(0, 1fr) 30px 30px;
+  }
+  .slot select {
+    font-size: 13px;
+  }
+}
