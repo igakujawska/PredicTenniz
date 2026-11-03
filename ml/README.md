@@ -1,10 +1,12 @@
 # Python i pierwszy model ML
 
-`train.py` jest osobnym, uruchamialnym eksperymentem. Python przygotowuje dane, uczy regresję logistyczną i ocenia ją na późniejszym sezonie. Spring Boot nie uruchamia Pythona podczas korzystania z aplikacji: czyta mały artefakt JSON z parametrami i wykonuje identyczne obliczenie w Javie.
+`train.py` jest odtwarzalnym eksperymentem treningowym, a `service/` niezależną aplikacją FastAPI wykonującą modele. Spring Boot pyta tę usługę przez HTTP i zajmuje się obliczeniami drabinki oraz zapisem. Model jest przechowywany wyłącznie po stronie Pythona.
 
 ```text
-CSV historycznych meczów → ml/train.py → model JSON → TrainedLogisticModel → drabinka
+CSV → ml/train.py → zatwierdzony model w ml/artifacts → FastAPI → Spring Boot → Angular
 ```
+
+Uruchomienie API, healthchecki i kontrakt: [service/README.md](service/README.md).
 
 ## Uruchomienie lokalne
 
@@ -18,9 +20,9 @@ py -3.12 -m venv .venv
 ./.venv/Scripts/python.exe ml/train.py
 ```
 
-Na macOS/Linux użyj `python3 -m venv .venv` i `.venv/bin/python`. Trening zapisuje wynik w `target/ml/rank-logistic-v1.json`. Nie nadpisuje modelu aplikacji. Wbudowany artefakt jest w `src/main/resources/models/rank-logistic-v1.json`; wprowadzenie innych danych lub cech powinno otrzymać nową wersję modelu po przeglądzie wyników.
+Na macOS/Linux użyj `python3 -m venv .venv` i `.venv/bin/python`. Trening zapisuje wynik w `target/ml/rank-logistic-v1.json`. Nie nadpisuje modelu aplikacji. Wbudowany artefakt jest w `ml/artifacts/rank-logistic-v1.json`; wprowadzenie innych danych lub cech powinno otrzymać nową wersję modelu po przeglądzie wyników.
 
-`.venv`, pobrane CSV i robocze wyniki są ignorowane przez Git. Do uruchomienia dashboardu z gotowym modelem wystarcza Java i PostgreSQL.
+`.venv`, pobrane CSV i robocze wyniki są ignorowane przez Git. Do wykonywania gotowego modelu wystarczą zależności `requirements-api.txt`. Biblioteki treningowe są potrzebne tylko do eksperymentów.
 
 ## Co oznacza tu uczenie
 
@@ -60,9 +62,13 @@ ML nie zwiększył tutaj trafności wyboru faworyta; nieznacznie zmienił jakoś
 
 Log loss mocno karze pewne, błędne prognozy. Brier score mierzy średni kwadrat błędu prawdopodobieństwa. Artefakt zawiera też przedziały kalibracji: porównanie przewidywanego procentu z odsetkiem zwycięstw w grupie podobnych prognoz.
 
-## Dlaczego Java liczy to samo
+## Serwowanie modelu i kolejny eksperyment
 
-JSON zawiera kolejność cech, współczynniki, datę treningu, metryki, pochodzenie danych i przykładowe prawdopodobieństwa. `TrainedLogisticModelTest` porównuje wynik Javy z wartościami wyeksportowanymi przez Pythona z tolerancją `1e-12`. API blokuje użycie modelu dla daty analizy wcześniejszej niż zadeklarowany koniec treningu.
+`service/test_service.py` porównuje odpowiedzi z wartościami kontrolnymi artefaktu i sprawdza kontrakt HTTP. FastAPI odrzuca analizę wcześniejszą niż zadeklarowany koniec treningu. Java nie zawiera już kopii współczynników ani implementacji regresji.
+
+`history_features.py` przygotowuje cechy: Elo ogólne i nawierzchniowe, formę 90 dni, formę nawierzchniową 180 dni, wyniki i liczbę meczów 365 dni oraz H2H. Dane historyczne można pobrać przez `python -m ml.history_features --download`. Wyniki są udostępniane dopiero 21 dni po dacie rozpoczęcia turnieju. To konserwatywne założenie badawcze, a nie rzeczywisty czas publikacji. Testy sprawdzają brak użycia przyszłych wyników, niezależność od kolejności rund i zamianę stron.
+
+Ten moduł nie jest jeszcze wytrenowanym modelem ani źródłem cech dla aktualnego API. Kolejny krok to walidacja chronologiczna modelu wykorzystującego te cechy i porównanie z obecnymi punktami odniesienia.
 
 ## Źródła i następne ćwiczenie
 

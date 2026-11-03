@@ -1,76 +1,40 @@
-# Jak działa PredictTeniz
+# Architektura PredictTeniz
 
-Jedna aplikacja Spring Boot, jedna baza PostgreSQL i frontend serwowany z tego samego adresu. Moduły są podzielone według funkcji. Nie uruchamiamy jeszcze osobnych mikroserwisów: na tym etapie utrudniłyby śledzenie przepływu i lokalne uruchamianie.
+Trzy niezależnie uruchamiane aplikacje, jedno repozytorium. Spring Boot nadal jest jednym backendem; Python jest oddzielną usługą ML. Angular nie zawiera reguł predykcji.
 
 ```mermaid
-flowchart TD
-    UI[Dashboard: HTML + JavaScript] --> API[TournamentController: HTTP i walidacja]
-    API --> TS[TournamentService: przebieg operacji]
-    TS --> PS[PredictionService: dane graczy na wskazany dzień]
-    PS --> PR[Repozytoria graczy i rankingów]
-    PR --> DB[(PostgreSQL)]
-    TS --> BC[BracketCalculator: wszystkie ścieżki turnieju]
-    BC --> MODEL[WinProbabilityModel]
-    MODEL --> BASE[RankBaselineModel: heurystyka]
-    MODEL --> ML[TrainedLogisticModel: parametry z Pythona]
-    TS --> DR[TournamentDrawRepository: zapis par]
-    DR --> DB
-    CSV[Importy CSV + sprawdzenie SHA-256] --> PR
+flowchart LR
+    U[Przeglądarka] --> A[Angular :4200]
+    A -->|/api przez proxy| J[Java / Spring Boot :8080]
+    J -->|JPA / Flyway| D[(PostgreSQL)]
+    J -->|HTTP /v1/predict, jedna paczka par| P[Python / FastAPI :8001]
+    P --> M[Wersjonowany model JSON]
+    T[Trening Python] --> M
 ```
 
-## Odpowiedzialności
+## Od kliknięcia do prognozy
 
-| Miejsce | Za co odpowiada |
-|---|---|
-| `dashboard/DashboardController` | Zwraca szablon strony. Thymeleaf dodaje token do ochrony żądań formularza. |
-| `templates/dashboard.html` | Układ strony, formularze i czytelne informacje o ograniczeniach modelu. |
-| `static/assets/dashboard.js` | Wywołuje API, wyświetla wyniki, obsługuje pliki JSON. Nie oblicza szans. |
-| `tournament/TournamentController` | Przyjmuje HTTP/JSON, sprawdza format i zwraca odpowiedź HTTP. |
-| `tournament/TournamentService` | Łączy pobranie danych, obliczenie prognozy i opcjonalny zapis w transakcji. |
-| `prediction/PredictionService` | Dobiera ostatni ranking ATP z datą nie późniejszą niż `asOf`. Brak rankingu daje błąd 422. |
-| `prediction/WinProbabilityModel` | Kontrakt modelu pojedynczego meczu. Silnik turnieju nie musi znać użytego wzoru. |
-| `tournament/BracketCalculator` | Propaguje rozkłady możliwych zwycięzców przez kolejne rundy. |
-| `player/*Repository` | Odczyt i zapis encji przez JPA. |
-| `db/migration` | Wersjonowane zmiany struktury bazy wykonywane przez Flyway. |
-| `player/importing` | Pobranie przygotowanych plików, walidacja i zapis rekordów. Import jest uruchamiany świadomie profilem. |
+1. Angular wysyła kolejność zawodników, datę danych, nawierzchnię, format i wersję modelu. Przy zmianach formularza opóźnia zapytanie o 180 ms i anuluje nieaktualny podgląd.
+2. Spring sprawdza wejście i pobiera profile oraz najnowsze rankingi dostępne do wskazanej daty. Nie korzysta z rankingów z przyszłości. Identyfikatory bazy pozostają oddzielone od identyfikatorów źródła danych.
+3. `PredictionModels` przygotowuje wszystkie nieuporządkowane pary: dla 16 graczy jest ich 120. Jedno zapytanie do Pythona zwraca kompletną macierz prawdopodobieństw.
+4. Python waliduje kontrakt i datę treningu, a potem wykonuje wskazany model. Nie zna hasła ani tabel bazy Javy.
+5. `CachedPairModel` sprawdza kompletność odpowiedzi, unikalność par i sumy prawdopodobieństw. `BracketCalculator` wylicza szanse na tytuł ze wszystkich możliwych rywali. Pokazana ścieżka faworytów jest osobnym uproszczonym widokiem.
+6. Dopiero po prawidłowej prognozie zapisujemy definicję turnieju. `TournamentDrawStore` otwiera transakcję tylko na czas odczytu/zapisu — nie utrzymuje jej podczas czekania na HTTP. `@Version` i warunek wersji chronią przed utratą cudzych zmian.
 
-`Controller` jest wejściem do aplikacji, `Service` wykonuje operację, `Repository` komunikuje się z bazą, a `Entity` opisuje zapisany obiekt. Tomcat obsługuje HTTP i kieruje żądanie do Spring MVC. Docker uruchamia obecnie PostgreSQL; kod Javy działa z IntelliJ lub Mavena.
+## Granice awarii
 
-## Co dzieje się po zmianie par
+Klient ML ma limit połączenia 2 s i odczytu 5 s. Niedostępność Pythona daje jawny błąd 503 dla nowej prognozy. Odczyt zapisanej definicji zwraca jej ustawienia nawet przy awarii ML; prognoza ma wtedy wartość null i komunikat błędu. Nie podmieniamy modelu bez wiedzy użytkownika. Połączenie HTTP może zostać ponowione przez użytkownika; zapisów nie ponawiamy automatycznie po błędzie sieci.
 
-1. JavaScript wysyła `POST /api/tournaments/preview` z nazwą, datą danych i identyfikatorami graczy w kolejności miejsc.
-2. Backend odrzuca duplikaty, niedozwoloną liczbę graczy, przyszłą datę analizy lub brakujące rankingi.
-3. `PredictionService` pobiera pozycje. Użycie rankingu opublikowanego po dacie analizy byłoby wyciekiem przyszłej informacji do historycznej prognozy.
-4. Model oblicza szanse spotkań, a silnik drabinki oblicza szanse awansu.
-5. Odpowiedź zawiera prognozowaną ścieżkę i osobne szanse na tytuł dla wszystkich graczy. Podgląd nie zapisuje nic w bazie.
-6. `POST /api/tournaments` wykonuje te same obliczenia i dodatkowo zapisuje drabinkę. `GET /api/tournaments/{id}` ją ponownie otwiera.
+Angular najpierw pobiera token `/api/session`, potem przesyła go w nagłówku zapisów. Proxy deweloperskie i Nginx Dockera zachowują jedną domenę. CSRF pozostaje włączone. To lokalny projekt bez kont użytkowników; dostęp do API turniejów jest publiczny na lokalnych portach. Wersja internetowa wymaga osobnego projektu uwierzytelniania i własności danych.
 
-`GET /api/tournaments/players?asOf=2026-06-08` udostępnia graczy z dostępnym rankingiem, jego datę i wersję modelu. `GET /api/tournaments` zwraca ostatnie 20 zapisanych drabinek.
+## Co rozwijać w którym miejscu
 
-## Model bazowy i drabinka
+- `frontend/src/app/pages`: interfejs i stan formularzy; `core/api.ts`: komunikacja ze Springiem.
+- `src/main/java/.../player`: profile i import; `prediction`: przygotowanie wejścia i klient ML; `tournament`: zapis i matematyka drabinki.
+- `ml/service`: walidacja i wykonywanie modeli. `ml/artifacts`: zatwierdzone modele. `ml/train.py`: odtwarzalny eksperyment. `ml/history_features.py`: następny etap badań nad historią.
+- `contracts/ml-openapi.json`: jawna granica Java–Python. Generowanie: `python -m ml.service.export_contract`.
+- `compose.yaml`: wspólne uruchamianie; osobny Dockerfile każdej aplikacji.
 
-Model bazowy: `P(A wygrywa) = sqrt(rankB) / (sqrt(rankA) + sqrt(rankB))`. Równe pozycje dają 50%; pozycja 1 przeciwko 16 daje 80%. Wykładnik 0.5 jest ustaloną regułą, a nie parametrem wyuczonym na meczach. Model nie jest jeszcze skalibrowany ani oceniony na zbiorze testowym.
+Lombok generuje konstruktory wstrzykujące zależności i gettery encji. Encje nie używają `@Data`; zachowują jawne operacje biznesowe i ochronę kolekcji przed modyfikacją z zewnątrz.
 
-Wizualna ścieżka wybiera faworyta każdego spotkania; przy remisie wybieramy zawodnika z pierwszego miejsca pary. To przykładowy wariant. Szanse na tytuł liczymy osobno, sumując wszystkie możliwe spotkania. Przy czterech równych zawodnikach każdy otrzymuje 25%, a suma dla całego turnieju wynosi 100% przed zaokrągleniem. Są to dokładne obliczenia **w ramach przyjętego modelu**, przy stałej sile zawodnika i niezależności wyników warunkowej względem tych sił.
-
-`WinProbabilityModel` obsługuje obecnie również `MatchConditions`: nawierzchnię HARD/CLAY/GRASS i best of 3/5. `PredictionModels` wybiera wersję bazową albo `rank-logistic-v1` i pilnuje daty zakończenia treningu. Python uczy współczynniki i ocenia model; Java odczytuje JSON oraz liczy prognozy bez osobnego serwera Pythona. [Opis eksperymentu](../ml/README.md) zawiera dane, metryki i ograniczenia.
-
-## Baza i powtarzalność
-
-- `players`: profile.
-- `player_external_ids`: połączenie lokalnego gracza z identyfikatorem źródła, bez dopasowywania po nazwisku.
-- `player_rankings`: obserwacje rankingów z datą i źródłem.
-- `tournament_draws`: nazwa, data analizy, czas utworzenia, UUID, nawierzchnia, format meczu i wersja modelu.
-- `tournament_entries`: dokładna kolejność miejsc i referencje do graczy.
-
-Zapisujemy ustawienie turnieju, a prognozę przeliczamy przy odczycie. Uzupełnienie starszych rankingów lub zmiana modelu może zmienić wynik. Pełny audyt historycznych prognoz będzie wymagał osobnych snapshotów cech, wersji modelu i wyniku obliczenia; obecna wersja jeszcze tego nie obiecuje.
-
-PostgreSQL działa w Dockerze z trwałym wolumenem. Testy używają osobnego schematu. `open-in-view=false` oznacza, że dane do odpowiedzi przygotowujemy w serwisie, a nie dociągamy ich podczas rysowania strony. Spring Modulith Core pozostaje do organizacji kodu; nie włączamy trwałej kolejki zdarzeń, której jeszcze nie używamy.
-
-## Format drabinki JSON
-
-Najłatwiej wyeksportować plik przyciskiem na stronie i potem go wczytać. Format ma pola `title`, `asOf` (YYYY-MM-DD), `playerIds` (lista 2/4/8/16 różnych lokalnych identyfikatorów), `surface`, `bestOf` i `modelVersion`. Starsze pliki bez trzech ostatnich pól używają HARD, best of 3 i modelu bazowego. Miejsca 1–2 tworzą pierwszą parę, 3–4 drugą itd. Identyfikatory muszą istnieć w tej bazie i mieć ranking na wskazany dzień. Import plików nie wysyła ich do zewnętrznej usługi. Zdjęcia/PDF oraz oficjalne formaty drabinek wymagają osobnych parserów.
-
-## Interakcje dashboardu
-
-Frontend zachowuje poprzedni wynik podczas przeliczania i odrzuca starsze odpowiedzi podglądu. Web Animations API animuje wejście meczów i długości pasków; requestAnimationFrame przeprowadza liczby do nowych wartości. prefers-reduced-motion wyłącza ruch. Losowanie zmienia wyłącznie kolejność wybranych graczy; podświetlenie pokazuje jego drogę w prognozowanym wariancie.
+Komunikacja jest obecnie synchroniczna, ponieważ użytkownik oczekuje od razu wyniku drabinki. Broker zdarzeń będzie uzasadniony przy długim imporcie lub treningu w tle. Nie jest potrzebny do pojedynczej prognozy.

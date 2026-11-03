@@ -1,35 +1,57 @@
 # PredictTeniz
 
-Lokalna aplikacja do analizy drabinek tenisowych: wybierz zawodników ATP, ustaw pary, sprawdź przewidywany przebieg rund i szanse na tytuł. Zapisane drabinki trafiają do PostgreSQL; można je ponownie otwierać oraz importować i eksportować jako JSON.
+Aplikacja do analizy drabinek ATP: ustaw pary, porównaj modele dla jednego meczu, sprawdź wszystkie możliwe drogi do tytułu i zapisz turniej. Projekt rozwijany w IntelliJ, z osobnymi aplikacjami Java, Python i Angular w jednym repozytorium.
 
-Projekt rozwijany krok po kroku w IntelliJ. Aktualny kod znajduje się na **main**. Wcześniejszy prototyp pozostaje w historii Git; folderem roboczym jest projekt `PredictTeniz` z głównym `pom.xml`.
+## Podział aplikacji
 
-## Co już działa
+| Część | Katalog | Odpowiedzialność | Adres lokalny |
+|---|---|---|---|
+| Angular | `frontend/` | Widoki, formularze, drabinka, jasny/ciemny motyw | http://localhost:4200 |
+| Java + Spring Boot | `src/`, `pom.xml` | API, dane zawodników, zapis turniejów, obliczenia drabinki | http://localhost:8080/api/health |
+| Python + FastAPI | `ml/service/`, `ml/artifacts/` | Wykonywanie i wersjonowanie modeli | http://localhost:8001/docs |
+| PostgreSQL | `compose.yaml` | Profile, rankingi i drabinki należące do Javy | port 5434 |
 
-- Import profili i najnowszego snapshotu rankingu z przypiętego archiwum CSV.
-- Dashboard pod `/`: ciemny tenisowy interfejs, drabinki 2/4/8/16 zawodników, losowanie par, podświetlanie drogi gracza i animowane przeliczanie szans. Animacje respektują ograniczenie ruchu w systemie.
-- Prognozy pojedynczych meczów i obliczanie szans na tytuł ze wszystkich możliwych ścieżek.
-- Zapis kolejności par, daty danych, nawierzchni, formatu meczu i wersji modelu; ponowny odczyt i import/eksport JSON.
-- Walidacja wejścia, jawne błędy brakujących rankingów, ochrona CSRF i migracje Flyway.
+Java jest językiem backendu, a Spring Boot jego frameworkiem. Python nie łączy się z bazą Javy. Dostaje jawne dane wejściowe przez HTTP i oddaje prawdopodobieństwa. [Diagram i przepływ żądania](docs/ARCHITECTURE.md).
 
-**Dostępne są dwa modele: heurystyka rankingowa i wytrenowana regresja logistyczna ML.** Możesz zmieniać nawierzchnię i format meczu. [Moduł Pythona](ml/README.md) opisuje trening, test na osobnym sezonie i ograniczenia wyników. Próbka przygotowana z archiwum ma datę **2026-06-08**, a nie dzisiejszy ranking. Rozpoznawanie zdjęć/PDF drabinek, forma, nagrody pieniężne oraz sieci neuronowe są kolejnymi etapami.
+## Uruchomienie podczas pracy nad kodem
 
-<details>
-<summary>Podgląd dashboardu i Model Lab</summary>
+Wymagane: JDK 25+, Node.js 24.15+ w linii 24, Python 3.12 i Docker Desktop. W głównym folderze skopiuj `.env.example` do `.env` i ustaw lokalne hasło bazy. Nie dodawaj `.env` do Git.
 
-![PredictTeniz: drabinka z modelem ML i wynikami eksperymentu](docs/images/dashboard.jpg)
+1. Python — pierwszy terminal w głównym folderze:
 
-</details>
-## Uruchomienie
+```powershell
+py -3.12 -m venv .venv
+./.venv/Scripts/python.exe -m pip install -r ml/requirements-api.txt
+./.venv/Scripts/python.exe -m uvicorn ml.service.app:app --host 127.0.0.1 --port 8001 --reload
+```
 
-Wymagane: JDK 25+, Docker Desktop oraz dostęp do internetu przy pierwszym pobraniu zależności i danych. Frontend jest częścią Spring Boot; nie wymaga osobnego serwera ani Node.js.
+2. Spring Boot — uruchom `PredictTenizApplication` przyciskiem Run w IntelliJ. Backend sam uruchamia PostgreSQL przez Compose. Możesz też użyć `./mvnw.cmd spring-boot:run` po ustawieniu `JAVA_HOME`.
 
-1. Otwórz folder zawierający ten `pom.xml` jako projekt Maven w IntelliJ i ustaw JDK.
-2. Skopiuj `.env.example` do `.env`, ustaw lokalne hasło PostgreSQL i uruchom Docker Desktop.
-3. Dla pustej bazy wykonaj import danych opisany poniżej. W istniejącej bazie import można powtarzać — istniejące identyfikatory i obserwacje rankingu są pomijane.
-4. Uruchom `PredictTenizApplication` w IntelliJ i otwórz **http://localhost:8080/**.
+3. Angular — drugi terminal:
 
-Spring Boot uruchamia PostgreSQL przez `compose.yaml`. Baza udostępnia lokalny port 5434, aplikacja 8080. Jeżeli uruchamiasz Maven w terminalu, `JAVA_HOME` musi wskazywać JDK.
+```powershell
+cd frontend
+npm ci
+npm start
+```
+
+Otwórz **http://localhost:4200**. Angular przekazuje `/api` do Springa, więc przeglądarka korzysta z jednego adresu i zachowuje sesję CSRF. Port 8080 przekierowuje do osobnego frontendu; Java nie dostarcza już starego szablonu HTML. Każdy proces zatrzymujesz osobno przez Stop w IntelliJ lub Ctrl+C w jego terminalu.
+
+## Uruchomienie całego zestawu w Dockerze
+
+Po przygotowaniu `.env`, w głównym folderze:
+
+```powershell
+docker compose --profile full up --build -d
+```
+
+Po uzyskaniu statusu healthy otwórz **http://localhost:4200**. Polecenie `docker compose --profile full ps` pokazuje stan usług. Ten tryb wymaga wolnych portów 4200, 8080 i 8001 — najpierw zatrzymaj odpowiadające im procesy uruchomione lokalnie. Zatrzymanie bez usuwania danych:
+
+```powershell
+docker compose --profile full stop
+```
+
+Domyślny `docker compose up -d` uruchamia tylko bazę. Profil `full` dodaje ML, backend i frontend. Kontenery mają healthchecki; backend startuje po bazie i Pythonie, a frontend po backendzie. Dane PostgreSQL pozostają w dotychczasowym wolumenie. Nowa baza jest pusta i wymaga poniższego importu.
 
 ### Pierwszy import danych — PowerShell
 
@@ -47,22 +69,27 @@ $rankings = '-Dspring-boot.run.arguments=--spring.profiles.active=ranking-import
 
 Każdy importer kończy pracę po wypisaniu podsumowania. Następnie uruchom aplikację normalnie, bez profilu importu. Na macOS/Linux użyj `./mvnw` i równoważnych argumentów oraz przygotowanego CSV. Dane i manifesty w `target/import` nie są dodawane do Git.
 
-## Architektura i nauka
+## Co działa
 
-[Opis modułów, przepływu żądania i modelu](docs/ARCHITECTURE.md) wyjaśnia, co odpowiada za każdy krok. [Pochodzenie danych](docs/PLAYER_IMPORT.md) dokumentuje profile i zewnętrzne warunki korzystania z danych.
+- Drabinki 2/4/8/16 zawodników: zmiana par, losowanie, podświetlanie drogi gracza oraz szanse na tytuł ze wszystkich możliwych ścieżek.
+- Zapis, edycja i kopia turnieju; ochrona wersją przed nadpisaniem zmian z drugiego okna; import/eksport JSON.
+- Porównanie pojedynczego meczu dla dostępnych modeli, wyszukiwanie zawodników i filtr kraju.
+- Oddzielne API ML z kontraktem [OpenAPI](contracts/ml-openapi.json), walidacją wejścia i ograniczonym czasem oczekiwania.
+- Podczas awarii Pythona można odczytać definicję zapisanej drabinki; aplikacja pokazuje brak prognozy zamiast zastępczych wyników.
 
-Technologie: Java, Spring Boot MVC, Thymeleaf, JavaScript, Spring Data JPA, PostgreSQL, Flyway, Spring Security, Docker Compose, JUnit i MockMvc. Jest to jeden modularny backend z lokalnym frontendem.
+Dostępne modele to heurystyka rankingowa i regresja logistyczna. Próbka rankingu ma datę **2026-06-08**, nie dzisiejszą. ML osiągnął log loss 0.6266 wobec 0.6276 heurystyki na 2483 meczach sezonu 2025, przy tej samej trafności 64.9%. [Metodologia i ograniczenia](ml/README.md). Moduł historycznych cech Elo i formy jest przygotowaniem kolejnego eksperymentu; nie jest jeszcze modelem używanym w aplikacji.
 
-## Testy
+## Sprawdzenie projektu
 
 ```powershell
 ./mvnw.cmd test
+./.venv/Scripts/python.exe -m pip install -r ml/requirements-test.txt -r ml/requirements.txt
+./.venv/Scripts/python.exe -m unittest discover -s ml -p 'test_*.py'
+./.venv/Scripts/python.exe -m unittest ml.service.test_service
+npm --prefix frontend test
+npm --prefix frontend run build
 ```
 
-Docker Desktop musi działać. Testy bazodanowe korzystają z oddzielnego schematu `player_entity_test`, a rekordy testowe są wycofywane. Nie dodają fikcyjnych graczy ani turniejów do schematu aplikacji.
+Docker Desktop musi działać. Testy bazy korzystają ze schematu `player_entity_test` i wycofują dane. Testy API Javy zastępują granicę HTTP ML, a testy klienta używają lokalnego serwera testowego. Zestaw Pythona sprawdza prawdziwy artefakt, walidację, kontrakt i dostępność historycznych cech.
 
-Testy sprawdzają m.in. import bez duplikatów, brak użycia przyszłych rankingów, normalizację szans w drabince, alternatywnych przeciwników w finale, zachowanie kolejności po zapisie, walidację API i CSRF.
-
-## Następny krok badawczy
-
-Rozszerzyć istniejący eksperyment o Elo i formę wyliczaną bez przyszłych wyników. Obecny ML ma nieznacznie niższy log loss od heurystyki na 2483 testowych meczach z 2025 roku, przy tej samej trafności 64.9%. Nie traktujemy tego jako potwierdzenia skuteczności na bieżących meczach. Wyniki i sposób odtworzenia eksperymentu: [ml/README.md](ml/README.md).
+Dane: Jeff Sackmann, wersjonowane archiwum CSV, CC BY-NC-SA 4.0. [Pochodzenie i import](docs/PLAYER_IMPORT.md). Aplikacja nie ma jeszcze danych na żywo, OCR drabinek, nagród pieniężnych ani sieci neuronowych.
