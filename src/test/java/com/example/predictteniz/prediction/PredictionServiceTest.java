@@ -21,6 +21,7 @@ class PredictionServiceTest {
     @Autowired PredictionService service;
     @Autowired PlayerRepository players;
     @Autowired PlayerRankingRepository rankings;
+    @Autowired PlayerExternalIdRepository identities;
 
     @Test
     void historicalPredictionNeverReadsAFutureRanking() {
@@ -38,5 +39,17 @@ class PredictionServiceTest {
         assertThatThrownBy(() -> service.snapshots(List.of(player.getId()), LocalDate.of(2026, 6, 1)))
             .isInstanceOf(ResponseStatusException.class).hasMessageContaining("422");
         assertThat(service.catalog(LocalDate.of(2026, 6, 1)).players()).isEmpty();
+    }
+    @Test
+    void snapshotsKeepSourceIdentityAndRequestedDrawOrder() {
+        var a = players.save(new Player("A", "Test", null, null));
+        var b = players.save(new Player("B", "Test", null, null));
+        identities.save(new PlayerExternalId(a, "SACKMANN_ATP", "42"));
+        identities.save(new PlayerExternalId(b, "SACKMANN_ATP", "43"));
+        rankings.save(new PlayerRanking(a, RankingTour.ATP, LocalDate.of(2026, 6, 8), 1, 100, "TEST", Instant.now()));
+        rankings.save(new PlayerRanking(b, RankingTour.ATP, LocalDate.of(2026, 6, 8), 2, 80, "TEST", Instant.now()));
+        var result = service.snapshots(List.of(b.getId(), a.getId()), LocalDate.of(2026, 6, 8));
+        assertThat(result).extracting(PredictionService.RankedPlayer::id).containsExactly(b.getId(), a.getId());
+        assertThat(result).extracting(PredictionService.RankedPlayer::sourceId).containsExactly("43", "42");
     }
 }
