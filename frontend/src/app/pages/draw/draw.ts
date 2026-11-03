@@ -12,8 +12,9 @@ import type {
   Forecast,
   ModelInfo,
   Player,
+  TournamentFormatInfo,
 } from '../../core/contracts';
-import { parseDrawImport } from '../../core/draw-files';
+import { parseDrawImport, seedSlots, validateSlots } from '../../core/draw-files';
 import { Bracket } from '../../shared/bracket';
 
 @Component({
@@ -36,13 +37,35 @@ export class DrawPage {
   readonly loading = signal(false);
   readonly saving = signal(false);
   readonly dirty = signal(true);
-  readonly size = signal(8);
-  readonly slots = computed(() => Array.from({ length: this.size() }, (_, index) => index));
+  readonly size = signal(32);
+  readonly page = signal(0);
+  readonly formats = signal<TournamentFormatInfo[]>([]);
+  readonly selectedFormat = () =>
+    this.formats().find((format) => format.code === (this.form.formatCode || 'CUSTOM'));
+  readonly slots = computed(() =>
+    Array.from(
+      { length: Math.min(16, this.size() - this.page() * 16) },
+      (_, index) => this.page() * 16 + index,
+    ),
+  );
+  readonly pickerSlot = signal<number | null>(null);
+  readonly playerQuery = signal('');
+  readonly pickerPlayers = computed(() =>
+    this.players()
+      .filter((player) =>
+        player.name
+          .toLocaleLowerCase('pl')
+          .includes(this.playerQuery().trim().toLocaleLowerCase('pl')),
+      )
+      .slice(0, 40),
+  );
+  readonly playerMap = computed(() => new Map(this.players().map((player) => [player.id, player])));
   readonly today = new Date(Date.now() - new Date().getTimezoneOffset() * 60_000)
     .toISOString()
     .slice(0, 10);
   form: DrawRequest = {
-    title: 'Mój turniej ATP',
+    title: 'Moja symulacja ATP',
+    formatCode: 'ATP250_32',
     asOf: this.today,
     playerIds: [],
     surface: 'HARD',
@@ -91,13 +114,15 @@ export class DrawPage {
         }),
       ),
       saved: this.api.draws(),
+      formats: this.api.formats(),
     })
       .pipe(
         finalize(() => this.loading.set(false)),
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe({
-        next: ({ catalog, models, saved }) => {
+        next: ({ catalog, models, saved, formats }) => {
+          this.formats.set(formats);
           this.players.set(catalog.players);
           this.models.set(models);
           this.savedDraws.set(saved);
@@ -111,11 +136,7 @@ export class DrawPage {
           this.form.modelVersion = selected?.version || 'ranking-baseline-v1';
           const id = this.route.snapshot.queryParamMap.get('draw');
           if (id) this.loadSaved(id);
-          else {
-            this.resize(
-              Math.min(8, catalog.players.length >= 8 ? 8 : catalog.players.length >= 4 ? 4 : 2),
-            );
-          }
+          else this.applyFormat(this.form.formatCode || 'CUSTOM');
         },
         error: (error) => this.error.set(apiError(error)),
       });
@@ -127,14 +148,44 @@ export class DrawPage {
   }
   resize(size: number) {
     this.size.set(Number(size));
-    const seeds = (count: number): number[] =>
-      count === 2
-        ? [1, 2]
-        : seeds(count / 2).flatMap((seed, index) =>
-            index % 2 === 0 ? [seed, count + 1 - seed] : [count + 1 - seed, seed],
-          );
-    this.form.playerIds = seeds(this.size()).map((seed) => this.players()[seed - 1]?.id || 0);
+    this.page.set(0);
+    try {
+      this.form.playerIds = seedSlots(
+        this.players().map((player) => player.id),
+        this.size(),
+        this.selectedFormat()?.entrants || this.size(),
+      );
+      this.changed();
+    } catch (error) {
+      this.forecast.set(null);
+      this.error.set(apiError(error));
+    }
+  }
+  applyFormat(code: string) {
+    this.form.formatCode = code;
+    const format = this.formats().find((item) => item.code === code);
+    this.form.bestOf = format?.bestOf || 3;
+    this.resize(format?.drawSize || 8);
+  }
+  openPicker(index: number, dialog: HTMLDialogElement) {
+    this.pickerSlot.set(index);
+    this.playerQuery.set('');
+    dialog.showModal();
+    dialog.querySelector('input')?.focus();
+  }
+  pick(id: number, dialog: HTMLDialogElement) {
+    const index = this.pickerSlot();
+    if (index === null) return;
+    const other = this.form.playerIds.indexOf(id);
+    if (other >= 0) this.form.playerIds[other] = this.form.playerIds[index];
+    this.form.playerIds[index] = id;
+    dialog.close();
     this.changed();
+  }
+  slotName(index: number) {
+    const id = this.form.playerIds[index];
+    const player = id ? this.playerMap().get(id) : null;
+    return player ? player.position + '. ' + player.name : 'Wolny los';
   }
   move(index: number, direction: number) {
     const other = index + direction;
@@ -146,12 +197,22 @@ export class DrawPage {
     this.changed();
   }
   shuffle() {
-    const ids = [...this.form.playerIds];
-    for (let index = ids.length - 1; index > 0; index--) {
-      const other = Math.floor(Math.random() * (index + 1));
-      [ids[index], ids[other]] = [ids[other], ids[index]];
+    const selected = new Set(this.form.playerIds);
+    const fixed = new Set(
+      this.players()
+        .filter((player) => selected.has(player.id))
+        .slice(0, this.selectedFormat()?.seeds || 0)
+        .map((player) => player.id),
+    );
+    const movable = this.form.playerIds
+      .map((id, index) => ({ id, index }))
+      .filter((item) => item.id !== null && !fixed.has(item.id));
+    const values = movable.map((item) => item.id);
+    for (let i = values.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [values[i], values[j]] = [values[j], values[i]];
     }
-    this.form.playerIds = ids;
+    movable.forEach((item, index) => (this.form.playerIds[item.index] = values[index]));
     this.changed();
   }
   setDate(date: string) {
@@ -173,8 +234,15 @@ export class DrawPage {
       throw new Error('Podaj nazwę turnieju do 100 znaków.');
     if (!this.form.asOf || this.form.asOf > this.today)
       throw new Error('Wybierz datę danych nie późniejszą niż dzisiaj.');
-    if (this.form.playerIds.some((id) => !id) || new Set(this.form.playerIds).size !== this.size())
-      throw new Error('Wybierz różnych zawodników dla wszystkich miejsc.');
+    validateSlots(this.form.playerIds);
+    const format = this.selectedFormat();
+    if (
+      format &&
+      format.code !== 'CUSTOM' &&
+      (this.form.playerIds.length !== format.drawSize ||
+        this.form.playerIds.filter((id) => id !== null).length !== format.entrants)
+    )
+      throw new Error('Liczba graczy i wolnych losów nie pasuje do formatu.');
     return {
       ...this.form,
       title: this.form.title.trim(),
@@ -232,14 +300,9 @@ export class DrawPage {
           this.saved.set(draw);
           this.forecast.set(draw.forecast);
           this.dirty.set(false);
-          const ids =
-            draw.playerIds ||
-            draw.forecast?.rounds[0]?.matches.flatMap((match) => [
-              match.playerA?.id ?? null,
-              match.playerB?.id ?? null,
-            ]) ||
-            [];
+          const ids = draw.playerIds;
           this.form = {
+            formatCode: draw.formatCode || 'CUSTOM',
             title: draw.title,
             asOf: draw.asOf,
             playerIds: [...ids],
@@ -248,6 +311,7 @@ export class DrawPage {
             modelVersion: draw.modelVersion || draw.forecast?.modelVersion || 'ranking-baseline-v1',
           };
           this.size.set(ids.length);
+          this.page.set(0);
           if (draw.predictionError) this.error.set(draw.predictionError);
           this.router.navigate(['/draw'], { queryParams: { draw: id }, replaceUrl: true });
         },
@@ -278,7 +342,9 @@ export class DrawPage {
         .subscribe({
           next: (catalog) => {
             if (
-              definition.playerIds.some((id) => !catalog.players.some((player) => player.id === id))
+              definition.playerIds.some(
+                (id) => id !== null && !catalog.players.some((player) => player.id === id),
+              )
             ) {
               this.error.set('Niektórzy zawodnicy z pliku nie mają rankingów dla wybranej daty.');
               return;
@@ -287,6 +353,8 @@ export class DrawPage {
             this.saved.set(null);
             this.form = definition;
             this.size.set(definition.playerIds.length);
+            this.page.set(0);
+            this.router.navigate(['/draw'], { replaceUrl: true });
             this.changed();
           },
           error: (error) => this.error.set(apiError(error)),

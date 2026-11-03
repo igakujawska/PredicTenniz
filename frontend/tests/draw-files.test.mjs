@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { parseDrawImport } from '../src/app/core/draw-files.ts';
+import { parseDrawImport, seedSlots, validateSlots } from '../src/app/core/draw-files.ts';
 
 const models = ['ranking-baseline-v1', 'rank-logistic-v1'];
 const today = '2026-11-03';
@@ -32,4 +32,31 @@ test('model selection is retained while persistence version is discarded on impo
   assert.equal(result.bestOf, 5);
   assert.equal('version' in result, false);
   assert.throws(() => parseDrawImport({ ...original, modelVersion: 'unknown' }, models, today));
+});
+
+test('96 entrants occupy 128 slots with byes for the leading 32 seeds', () => {
+  const slots = seedSlots(
+    Array.from({ length: 500 }, (_, i) => i + 1),
+    128,
+    96,
+  );
+  assert.equal(slots.filter((id) => id === null).length, 32);
+  assert.equal(new Set(slots.filter((id) => id !== null)).size, 96);
+  for (let i = 0; i < 128; i += 2)
+    if (slots[i] === null || slots[i + 1] === null) assert.ok((slots[i] ?? slots[i + 1]) <= 32);
+});
+test('large imports preserve explicit byes but reject empty matches', () => {
+  const slots = seedSlots(
+    Array.from({ length: 500 }, (_, i) => i + 1),
+    32,
+    28,
+  );
+  const imported = parseDrawImport(
+    { ...original, playerIds: slots, formatCode: 'ATP250_28' },
+    models,
+    today,
+  );
+  assert.deepEqual(imported.playerIds, slots);
+  assert.throws(() => validateSlots([null, null, 1, 2]));
+  assert.throws(() => parseDrawImport({ ...original, formatCode: 'unknown' }, models, today));
 });

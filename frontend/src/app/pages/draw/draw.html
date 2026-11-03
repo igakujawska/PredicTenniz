@@ -1,7 +1,9 @@
 <div class="page-heading">
   <div>
     <h1>Turniej</h1>
-    <p class="muted">Ustaw pary i sprawdź możliwy przebieg turnieju.</p>
+    <p class="muted">
+      Własna obsada, zasady wybranego formatu i prognoza ze wszystkich możliwych ścieżek.
+    </p>
   </div>
   <div class="actions">
     <button type="button" (click)="newDraw()">Nowy</button>
@@ -27,10 +29,30 @@
 }
 <div class="draw-layout">
   <aside class="panel settings">
-    <h2>Ustawienia</h2>
+    <h2>Ustawienia turnieju</h2>
     <div class="fields">
       <div class="field full">
-        <label for="draw-title">Nazwa turnieju</label
+        <label for="tournament-format">Kategoria i format</label
+        ><select
+          id="tournament-format"
+          [ngModel]="form.formatCode"
+          (ngModelChange)="applyFormat($event)"
+        >
+          @for (format of formats(); track format.code) {
+            <option [value]="format.code">{{ format.label }}</option>
+          }
+        </select>
+      </div>
+      @if (selectedFormat(); as format) {
+        @if (format.code !== 'CUSTOM') {
+          <div class="format-facts full">
+            <strong>{{ format.entrants }} graczy · {{ format.byes }} wolnych losów</strong
+            ><span>{{ format.championPoints }} punktów za tytuł · best of {{ format.bestOf }}</span>
+          </div>
+        }
+      }
+      <div class="field full">
+        <label for="draw-title">Nazwa symulacji</label
         ><input
           id="draw-title"
           maxlength="100"
@@ -38,14 +60,16 @@
           (ngModelChange)="changed()"
         />
       </div>
-      <div class="field">
-        <label for="draw-size">Liczba graczy</label
-        ><select id="draw-size" [ngModel]="size()" (ngModelChange)="resize($event)">
-          @for (count of [2, 4, 8, 16]; track count) {
-            <option [ngValue]="count">{{ count }}</option>
-          }
-        </select>
-      </div>
+      @if (form.formatCode === 'CUSTOM') {
+        <div class="field">
+          <label for="draw-size">Miejsca w drabince</label
+          ><select id="draw-size" [ngModel]="size()" (ngModelChange)="resize($event)">
+            @for (count of [2, 4, 8, 16, 32, 64, 128]; track count) {
+              <option [ngValue]="count">{{ count }}</option>
+            }
+          </select>
+        </div>
+      }
       <div class="field">
         <label for="draw-date">Dane dostępne do</label
         ><input
@@ -64,13 +88,15 @@
           <option value="GRASS">Grass</option>
         </select>
       </div>
-      <div class="field">
-        <label for="best-of">Format meczu</label
-        ><select id="best-of" [(ngModel)]="form.bestOf" (ngModelChange)="changed()">
-          <option [ngValue]="3">Best of 3</option>
-          <option [ngValue]="5">Best of 5</option>
-        </select>
-      </div>
+      @if (form.formatCode === 'CUSTOM') {
+        <div class="field">
+          <label for="best-of">Format meczu</label
+          ><select id="best-of" [(ngModel)]="form.bestOf" (ngModelChange)="changed()">
+            <option [ngValue]="3">Best of 3</option>
+            <option [ngValue]="5">Best of 5</option>
+          </select>
+        </div>
+      }
       <div class="field full">
         <label for="draw-model">Model</label
         ><select id="draw-model" [(ngModel)]="form.modelVersion" (ngModelChange)="changed()">
@@ -81,36 +107,58 @@
       </div>
     </div>
     <div class="slots-heading">
-      <h3>Pary pierwszej rundy</h3>
-      <button type="button" class="text" (click)="shuffle()">Losuj pary</button>
+      <h3>Obsada · {{ players().length }} dostępnych</h3>
+      <button type="button" class="text" (click)="shuffle()">Losuj nierozstawionych</button>
     </div>
+    <p class="muted">
+      Własna symulacja — nie oficjalna lista startowa. Kliknij gracza, by wyszukać lub zamienić
+      zawodnika.
+    </p>
+    @if (size() > 16) {
+      <div class="slot-pagination">
+        <button type="button" (click)="page.set(page() - 1)" [disabled]="page() === 0">←</button
+        ><span>Miejsca {{ page() * 16 + 1 }}–{{ (page() + 1) * 16 }}</span
+        ><button
+          type="button"
+          (click)="page.set(page() + 1)"
+          [disabled]="(page() + 1) * 16 >= size()"
+        >
+          →
+        </button>
+      </div>
+    }
     <div class="slots">
       @for (index of slots(); track index) {
         @if (index % 2 === 0) {
           <div class="pair-label">Para {{ index / 2 + 1 }}</div>
         }
         <div class="slot">
-          <label [for]="'player-' + index">{{ index + 1 }}</label
-          ><select
-            [id]="'player-' + index"
-            [attr.aria-label]="'Zawodnik na miejscu ' + (index + 1)"
-            [(ngModel)]="form.playerIds[index]"
-            (ngModelChange)="changed()"
+          <span class="slot-number">{{ index + 1 }}</span
+          ><button
+            type="button"
+            class="player-slot"
+            [disabled]="form.playerIds[index] === null"
+            [attr.aria-label]="'Zmień zawodnika na miejscu ' + (index + 1)"
+            (click)="openPicker(index, picker)"
           >
-            @for (player of players(); track player.id) {
-              <option [ngValue]="player.id">{{ player.position }}. {{ player.name }}</option>
-            }</select
+            {{ slotName(index) }}</button
           ><button
             type="button"
             (click)="move(index, -1)"
-            [disabled]="index === 0"
+            [disabled]="
+              index === 0 || form.playerIds[index] === null || form.playerIds[index - 1] === null
+            "
             [attr.aria-label]="'Przesuń zawodnika ' + (index + 1) + ' wyżej'"
           >
             ↑</button
           ><button
             type="button"
             (click)="move(index, 1)"
-            [disabled]="index === size() - 1"
+            [disabled]="
+              index === size() - 1 ||
+              form.playerIds[index] === null ||
+              form.playerIds[index + 1] === null
+            "
             [attr.aria-label]="'Przesuń zawodnika ' + (index + 1) + ' niżej'"
           >
             ↓
@@ -133,7 +181,7 @@
       ><select id="saved-draw" [ngModel]="saved()?.id || ''" (ngModelChange)="loadSaved($event)">
         <option value="">Nowa drabinka</option>
         @for (draw of savedDraws(); track draw.id) {
-          <option [value]="draw.id">{{ draw.title }} · {{ draw.asOf | date: 'dd.MM.yyyy' }}</option>
+          <option [value]="draw.id">{{ draw.title }} · {{ draw.players }} graczy</option>
         }
       </select>
     </div>
@@ -157,7 +205,35 @@
         <div class="skeleton"></div>
       </section>
     } @else {
-      <section class="panel empty">Wybierz zawodników i model. Prognoza pojawi się tutaj.</section>
+      <section class="panel empty">Wybierz zawodników i model.</section>
     }
   </div>
 </div>
+<dialog #picker class="player-picker">
+  <div class="panel-heading">
+    <h2>Zawodnik na miejscu {{ (pickerSlot() ?? 0) + 1 }}</h2>
+    <button type="button" (click)="picker.close()" aria-label="Zamknij wybór zawodnika">×</button>
+  </div>
+  <label for="picker-query">Szukaj wśród {{ players().length }} zawodników</label
+  ><input
+    id="picker-query"
+    type="search"
+    placeholder="Imię lub nazwisko"
+    [ngModel]="playerQuery()"
+    (ngModelChange)="playerQuery.set($event)"
+  />
+  <p class="muted">
+    Zawodnik obecny już w drabince zamieni się miejscami z wybranym graczem. Pokazujemy do 40
+    pasujących wyników.
+  </p>
+  <div class="picker-results">
+    @for (player of pickerPlayers(); track player.id) {
+      <button type="button" (click)="pick(player.id, picker)">
+        <span>{{ player.position }}. {{ player.name }}</span
+        ><small>{{ form.playerIds.includes(player.id) ? 'Zamień' : player.countryCode }}</small>
+      </button>
+    } @empty {
+      <p>Brak wyników.</p>
+    }
+  </div>
+</dialog>
