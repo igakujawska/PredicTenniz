@@ -53,4 +53,29 @@ class BracketCalculatorTest {
         assertThatThrownBy(() -> calculate(List.of(player(1, 1), player(1, 1))))
             .isInstanceOf(IllegalArgumentException.class);
     }
+    @Test
+    void byesAdvanceWithoutCallingTheModelAndDoNotCountAsMatches() {
+        var pairCalls = new java.util.concurrent.atomic.AtomicInteger();
+        var model = new com.example.predictteniz.prediction.WinProbabilityModel() {
+            public String version() { return "test"; }
+            public double probability(int a, int b) { pairCalls.incrementAndGet(); return .5; }
+        };
+        var slots = java.util.Arrays.asList(player(1,1), null, player(2,1), player(3,1));
+        var result = calculator.calculate(slots,model,com.example.predictteniz.prediction.MatchConditions.DEFAULT);
+        assertThat(result.rounds().getFirst().matches().getFirst().bye()).isTrue();
+        assertThat(result.titleChances().stream().filter(c -> c.player().id()==1).findFirst().orElseThrow().probability()).isEqualTo(.5);
+        assertThat(result.rounds().stream().flatMap(r -> r.matches().stream()).filter(m -> !m.bye())).hasSize(2);
+        assertThat(pairCalls.get()).isPositive();
+    }
+
+    @Test
+    void fullGrandSlamHasSevenRoundsAndOneHundredTwentySevenMatches() {
+        var result = calculate(IntStream.rangeClosed(1,128).mapToObj(i -> player(i,10)).toList());
+        assertThat(result.rounds()).hasSize(7);
+        assertThat(result.rounds().stream().mapToInt(r -> r.matches().size()).sum()).isEqualTo(127);
+        assertThat(result.titleChances()).allSatisfy(c -> assertThat(c.probability()).isEqualTo(1.0/128));
+        assertThatThrownBy(() -> calculate(java.util.Arrays.asList(null,null,player(1,1),player(2,1))))
+            .isInstanceOf(IllegalArgumentException.class);
+    }
+
 }
