@@ -29,7 +29,8 @@ class PredictionBatch(Contract):
     as_of: date
     surface: Literal["HARD", "CLAY", "GRASS"]
     best_of: Literal[3, 5]
-    pairs: list[PredictionPair] = Field(min_length=1, max_length=120)
+    category: Literal["TOUR", "ATP_250", "ATP_500", "MASTERS_1000", "GRAND_SLAM"] = "TOUR"
+    pairs: list[PredictionPair] = Field(min_length=1, max_length=8128)
 
     @field_validator("as_of")
     @classmethod
@@ -52,6 +53,8 @@ class PredictionBatch(Contract):
                 if player_id in players and players[player_id] != identity:
                     raise ValueError("A player has inconsistent rank or source identity in this batch")
                 players[player_id] = identity
+        if len(players) > 128:
+            raise ValueError("A batch supports at most 128 different players")
         return self
 
 
@@ -63,6 +66,7 @@ class PredictionOutcome(Contract):
 
 
 class BatchResult(Contract):
+    category: Literal["TOUR", "ATP_250", "ATP_500", "MASTERS_1000", "GRAND_SLAM"] = "TOUR"
     model_version: str
     as_of: date
     surface: Literal["HARD", "CLAY", "GRASS"]
@@ -80,6 +84,19 @@ class Benchmarks(Contract):
     ml: Scores
     baseline: Scores
     coin_flip: Scores
+    logistic: Scores | None = None
+    elo: Scores | None = None
+
+
+class FeatureGain(Contract):
+    feature: str
+    gain_share: float
+
+
+class CategoryScore(Contract):
+    matches: int
+    model: Scores
+    ranking: Scores
 
 
 class ModelDescription(Contract):
@@ -90,6 +107,13 @@ class ModelDescription(Contract):
     test_year: int | None = None
     test_matches: int | None = None
     metrics: Benchmarks | None = None
+    data_through: date | None = None
+    train_matches: int | None = None
+    history_matches: int | None = None
+    feature_names: list[str] = Field(default_factory=list)
+    feature_importance: list[FeatureGain] = Field(default_factory=list)
+    category_scores: dict[str, CategoryScore] = Field(default_factory=dict)
+    notes: list[str] = Field(default_factory=list)
 
 
 class ValidationIssue(Contract):

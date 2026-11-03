@@ -38,6 +38,18 @@
             "title": "Bestof",
             "type": "integer"
           },
+          "category": {
+            "default": "TOUR",
+            "enum": [
+              "TOUR",
+              "ATP_250",
+              "ATP_500",
+              "MASTERS_1000",
+              "GRAND_SLAM"
+            ],
+            "title": "Category",
+            "type": "string"
+          },
           "modelVersion": {
             "title": "Modelversion",
             "type": "string"
@@ -78,6 +90,26 @@
           "coinFlip": {
             "$ref": "#/components/schemas/Scores"
           },
+          "elo": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Scores"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "logistic": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Scores"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "ml": {
             "$ref": "#/components/schemas/Scores"
           }
@@ -90,9 +122,94 @@
         "title": "Benchmarks",
         "type": "object"
       },
+      "CategoryScore": {
+        "additionalProperties": false,
+        "properties": {
+          "matches": {
+            "title": "Matches",
+            "type": "integer"
+          },
+          "model": {
+            "$ref": "#/components/schemas/Scores"
+          },
+          "ranking": {
+            "$ref": "#/components/schemas/Scores"
+          }
+        },
+        "required": [
+          "matches",
+          "model",
+          "ranking"
+        ],
+        "title": "CategoryScore",
+        "type": "object"
+      },
+      "FeatureGain": {
+        "additionalProperties": false,
+        "properties": {
+          "feature": {
+            "title": "Feature",
+            "type": "string"
+          },
+          "gainShare": {
+            "title": "Gainshare",
+            "type": "number"
+          }
+        },
+        "required": [
+          "feature",
+          "gainShare"
+        ],
+        "title": "FeatureGain",
+        "type": "object"
+      },
       "ModelDescription": {
         "additionalProperties": false,
         "properties": {
+          "categoryScores": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/CategoryScore"
+            },
+            "title": "Categoryscores",
+            "type": "object"
+          },
+          "dataThrough": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Datathrough"
+          },
+          "featureImportance": {
+            "items": {
+              "$ref": "#/components/schemas/FeatureGain"
+            },
+            "title": "Featureimportance",
+            "type": "array"
+          },
+          "featureNames": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Featurenames",
+            "type": "array"
+          },
+          "historyMatches": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Historymatches"
+          },
           "label": {
             "title": "Label",
             "type": "string"
@@ -106,6 +223,13 @@
                 "type": "null"
               }
             ]
+          },
+          "notes": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Notes",
+            "type": "array"
           },
           "testMatches": {
             "anyOf": [
@@ -128,6 +252,17 @@
               }
             ],
             "title": "Testyear"
+          },
+          "trainMatches": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trainmatches"
           },
           "trained": {
             "title": "Trained",
@@ -174,6 +309,18 @@
             "title": "Bestof",
             "type": "integer"
           },
+          "category": {
+            "default": "TOUR",
+            "enum": [
+              "TOUR",
+              "ATP_250",
+              "ATP_500",
+              "MASTERS_1000",
+              "GRAND_SLAM"
+            ],
+            "title": "Category",
+            "type": "string"
+          },
           "modelVersion": {
             "maxLength": 64,
             "minLength": 1,
@@ -184,7 +331,7 @@
             "items": {
               "$ref": "#/components/schemas/PredictionPair"
             },
-            "maxItems": 120,
+            "maxItems": 8128,
             "minItems": 1,
             "title": "Pairs",
             "type": "array"
