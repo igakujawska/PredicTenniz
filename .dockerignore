@@ -1,0 +1,11 @@
+.git
+.env
+.env.*
+.venv
+target
+frontend/node_modules
+frontend/dist
+frontend/.angular
+.idea
+__pycache__
+**/__pycache__
