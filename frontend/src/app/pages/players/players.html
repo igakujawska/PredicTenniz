@@ -17,12 +17,16 @@
         type="search"
         placeholder="Imię lub nazwisko"
         [ngModel]="query()"
-        (ngModelChange)="query.set($event)"
+        (ngModelChange)="query.set($event); page.set(0)"
       />
     </div>
     <div class="field">
       <label for="country">Kraj</label
-      ><select id="country" [ngModel]="country()" (ngModelChange)="country.set($event)">
+      ><select
+        id="country"
+        [ngModel]="country()"
+        (ngModelChange)="country.set($event); page.set(0)"
+      >
         <option value="">Wszystkie</option>
         @for (code of countries(); track code) {
           <option [value]="code">{{ code }}</option>
@@ -45,7 +49,7 @@
           </tr>
         </thead>
         <tbody>
-          @for (player of filtered(); track player.id) {
+          @for (player of visiblePlayers(); track player.id) {
             <tr>
               <td>{{ player.position }}</td>
               <td>
@@ -68,4 +72,18 @@
     To zapis danych historycznych, a nie ranking na żywo. Data przy zawodniku określa obserwację
     używaną do predykcji.
   </p>
+  @if (filtered().length > 50) {
+    <div class="panel-heading" style="margin-top: 20px; margin-bottom: 0">
+      <button type="button" (click)="page.set(page() - 1)" [disabled]="page() === 0">
+        Poprzednia</button
+      ><span class="muted">Strona {{ page() + 1 }} · {{ filtered().length }} wyników</span
+      ><button
+        type="button"
+        (click)="page.set(page() + 1)"
+        [disabled]="(page() + 1) * 50 >= filtered().length"
+      >
+        Następna
+      </button>
+    </div>
+  }
 </section>

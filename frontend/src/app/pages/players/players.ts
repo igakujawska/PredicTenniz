@@ -12,6 +12,10 @@ export class PlayersPage {
   readonly players = signal<Player[]>([]);
   readonly query = signal('');
   readonly country = signal('');
+  readonly page = signal(0);
+  readonly visiblePlayers = computed(() =>
+    this.filtered().slice(this.page() * 50, (this.page() + 1) * 50),
+  );
   readonly error = signal('');
   readonly loading = signal(true);
   readonly date = signal<string | null>(null);
