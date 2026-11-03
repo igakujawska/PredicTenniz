@@ -5,12 +5,13 @@ import gzip
 import hashlib
 import json
 import numpy as np
-from xgboost import XGBClassifier
+from xgboost import Booster
 from .history_features import Event, History, FEATURE_NAMES, flip_features
 
 
 def symmetric_probability(model, matrix):
-    raw = model.predict_proba(np.concatenate((matrix, flip_features(matrix))))[:,1].astype(np.float64)
+    joined = np.concatenate((matrix, flip_features(matrix)))
+    raw = (model.predict_proba(joined)[:,1] if hasattr(model,'predict_proba') else model.inplace_predict(joined)).astype(np.float64)
     size = len(matrix)
     return (raw[:size] + 1 - raw[size:]) / 2
 
@@ -23,8 +24,10 @@ class FormModel:
         for filename, checksum in ((info['modelFile'],info['modelSha256']),(info['historyFile'],info['historySha256'])):
             if filename != __import__('pathlib').Path(filename).name or hashlib.sha256((directory/filename).read_bytes()).hexdigest()!=checksum:
                 raise ValueError('Model artifact checksum mismatch')
-        self.model = XGBClassifier(n_jobs=4)
+        self.model = Booster(params={"nthread":4})
         self.model.load_model(directory/info['modelFile'])
+        self.model.set_param({'nthread':4,'device':'cpu'})
+        if self.model.num_features()!=len(FEATURE_NAMES): raise ValueError('Model feature count mismatch')
         history = json.loads(gzip.decompress((directory/info['historyFile']).read_bytes()))
         self.events = [Event(date.fromisoformat(row[0]),*row[1:]) for row in history['events']]
         self.trained_through = date.fromisoformat(info['trainedThrough'])
