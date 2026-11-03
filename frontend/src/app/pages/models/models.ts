@@ -12,7 +12,7 @@ export class ModelsPage {
       .models()
       .pipe(takeUntilDestroyed(inject(DestroyRef)))
       .subscribe({
-        next: (models) => this.models.set(models),
+        next: (models) => this.models.set([...models].reverse()),
         error: (error) => this.error.set(apiError(error)),
       });
   }
