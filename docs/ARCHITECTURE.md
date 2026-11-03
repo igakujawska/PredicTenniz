@@ -8,7 +8,7 @@ flowchart LR
     A -->|/api przez proxy| J[Java / Spring Boot :8080]
     J -->|JPA / Flyway| D[(PostgreSQL)]
     J -->|HTTP /v1/predict, jedna paczka par| P[Python / FastAPI :8001]
-    P --> M[Wersjonowany model JSON]
+    P --> M[Model JSON / XGBoost UBJ i historia]
     T[Trening Python] --> M
 ```
 
@@ -16,7 +16,7 @@ flowchart LR
 
 1. Angular wysyła kolejność zawodników, datę danych, nawierzchnię, format i wersję modelu. Przy zmianach formularza opóźnia zapytanie o 180 ms i anuluje nieaktualny podgląd.
 2. Spring sprawdza wejście i pobiera profile oraz najnowsze rankingi dostępne do wskazanej daty. Nie korzysta z rankingów z przyszłości. Identyfikatory bazy pozostają oddzielone od identyfikatorów źródła danych.
-3. `PredictionModels` przygotowuje wszystkie nieuporządkowane pary: dla 16 graczy jest ich 120. Jedno zapytanie do Pythona zwraca kompletną macierz prawdopodobieństw.
+3. `PredictionModels` przygotowuje wszystkie nieuporządkowane pary: dla 128 graczy jest ich 8128; wolne losy nie są parami. Jedno zapytanie do Pythona zwraca kompletną macierz prawdopodobieństw.
 4. Python waliduje kontrakt i datę treningu, a potem wykonuje wskazany model. Nie zna hasła ani tabel bazy Javy.
 5. `CachedPairModel` sprawdza kompletność odpowiedzi, unikalność par i sumy prawdopodobieństw. `BracketCalculator` wylicza szanse na tytuł ze wszystkich możliwych rywali. Pokazana ścieżka faworytów jest osobnym uproszczonym widokiem.
 6. Dopiero po prawidłowej prognozie zapisujemy definicję turnieju. `TournamentDrawStore` otwiera transakcję tylko na czas odczytu/zapisu — nie utrzymuje jej podczas czekania na HTTP. `@Version` i warunek wersji chronią przed utratą cudzych zmian.
@@ -31,10 +31,16 @@ Angular najpierw pobiera token `/api/session`, potem przesyła go w nagłówku z
 
 - `frontend/src/app/pages`: interfejs i stan formularzy; `core/api.ts`: komunikacja ze Springiem.
 - `src/main/java/.../player`: profile i import; `prediction`: przygotowanie wejścia i klient ML; `tournament`: zapis i matematyka drabinki.
-- `ml/service`: walidacja i wykonywanie modeli. `ml/artifacts`: zatwierdzone modele. `ml/train.py`: odtwarzalny eksperyment. `ml/history_features.py`: następny etap badań nad historią.
+- `ml/service`: walidacja i wykonywanie modeli. `ml/artifacts`: zatwierdzone modele. `ml/train.py`: odtwarzalny eksperyment. `ml/history_features.py`: odtwarzanie historycznych cech do treningu i serwowania XGBoost.
 - `contracts/ml-openapi.json`: jawna granica Java–Python. Generowanie: `python -m ml.service.export_contract`.
 - `compose.yaml`: wspólne uruchamianie; osobny Dockerfile każdej aplikacji.
 
 Lombok generuje konstruktory wstrzykujące zależności i gettery encji. Encje nie używają `@Data`; zachowują jawne operacje biznesowe i ochronę kolekcji przed modyfikacją z zewnątrz.
 
 Komunikacja jest obecnie synchroniczna, ponieważ użytkownik oczekuje od razu wyniku drabinki. Broker zdarzeń będzie uzasadniony przy długim imporcie lub treningu w tle. Nie jest potrzebny do pojedynczej prognozy.
+
+## Formaty i wolne losy
+
+`TournamentFormat` rozdziela kategorię, liczbę uczestników, pojemność drabinki, rozstawienia, best-of i punkty za tytuł. Źródła są w [TOURNAMENTS.md](TOURNAMENTS.md). Slot z wartością null oznacza wolny los. `slot_count` zachowuje pełny rozmiar siatki, także przy końcowym pustym miejscu. Dwie puste pozycje nie mogą tworzyć pierwszego meczu. Wolny los przenosi rozkład awansu bez wywoływania modelu.
+
+Front pokazuje duże drabinki rundami i umożliwia wybór z 500 graczy w wyszukiwarce zamiast tworzyć 128 list z 500 opcjami każda. Zapis JSON zachowuje format i jawne wolne losy. Kategorie oraz warunki trafiają do modeli przez kontrakt HTTP.

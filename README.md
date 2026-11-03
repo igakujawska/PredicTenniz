@@ -20,6 +20,8 @@ Aplikacja do analizy drabinek ATP: ustaw pary, porównaj modele dla jednego mecz
 
 Java jest językiem backendu, a Spring Boot jego frameworkiem. Python nie łączy się z bazą Javy. Dostaje jawne dane wejściowe przez HTTP i oddaje prawdopodobieństwa. [Diagram i przepływ żądania](docs/ARCHITECTURE.md).
 
+Wybierz jeden z dwóch sposobów uruchomienia. Przy pełnym Dockerze pozostaw Play w IntelliJ wyłączony — Docker uruchamia także backend.
+
 ## Uruchomienie podczas pracy nad kodem
 
 Wymagane: JDK 25+, Node.js 24.15+ w linii 24, Python 3.12 i Docker Desktop. W głównym folderze skopiuj `.env.example` do `.env` i ustaw lokalne hasło bazy. Nie dodawaj `.env` do Git.
@@ -78,13 +80,17 @@ Każdy importer kończy pracę po wypisaniu podsumowania. Następnie uruchom apl
 
 ## Co działa
 
-- Drabinki 2/4/8/16 zawodników: zmiana par, losowanie, podświetlanie drogi gracza oraz szanse na tytuł ze wszystkich możliwych ścieżek.
+- 500 profili ATP z rankingiem w datowanym snapshotcie; wyszukiwanie i stronicowanie katalogu.
+- [Formaty turniejów](docs/TOURNAMENTS.md): ATP 250/500, Masters 1000 i Wielki Szlem, z odpowiednią liczbą graczy, wolnymi losami, formatem meczu i punktami za tytuł.
+- Drabinki do 128 miejsc: zmiana par, losowanie, podświetlanie drogi gracza oraz szanse na tytuł ze wszystkich możliwych ścieżek.
 - Zapis, edycja i kopia turnieju; ochrona wersją przed nadpisaniem zmian z drugiego okna; import/eksport JSON.
 - Porównanie pojedynczego meczu dla dostępnych modeli, wyszukiwanie zawodników i filtr kraju.
 - Oddzielne API ML z kontraktem [OpenAPI](contracts/ml-openapi.json), walidacją wejścia i ograniczonym czasem oczekiwania.
 - Podczas awarii Pythona można odczytać definicję zapisanej drabinki; aplikacja pokazuje brak prognozy zamiast zastępczych wyników.
 
-Dostępne modele to heurystyka rankingowa i regresja logistyczna. Próbka rankingu ma datę **2026-06-08**, nie dzisiejszą. ML osiągnął log loss 0.6266 wobec 0.6276 heurystyki na 2483 meczach sezonu 2025, przy tej samej trafności 64.9%. [Metodologia i ograniczenia](ml/README.md). Moduł historycznych cech Elo i formy jest przygotowaniem kolejnego eksperymentu; nie jest jeszcze modelem używanym w aplikacji.
+Dostępne są trzy modele: heurystyka rankingowa, regresja logistyczna i **XGBoost z Elo, formą, historią nawierzchniową, H2H oraz kategorią turnieju**. XGBoost korzysta z 20 342 meczów historii i 15 cech. Na wspólnym zbiorze 2474 meczów z 2025 roku osiągnął log loss 0.6158 wobec 0.6263 regresji; trafność była niższa (64.63% wobec 65.00%). Porównania i znaczenie cech są widoczne w zakładce Modele. [Odtworzenie eksperymentu i ograniczenia](ml/README.md).
+
+Snapshot rankingu i danych ma datę **2026-06-08**. 500 profili w katalogu nie oznacza 500 kompletnych historii: zawodnicy bez wcześniejszych wyników w tym archiwum otrzymują neutralne Elo i wygładzoną formę. Formaty turniejów służą do własnych symulacji; nie są oficjalnymi listami uczestników ani importem bieżącego kalendarza.
 
 ## Sprawdzenie projektu
 

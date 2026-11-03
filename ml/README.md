@@ -1,4 +1,4 @@
-# Python i pierwszy model ML
+# Python: modele i historia wyników
 
 `train.py` jest odtwarzalnym eksperymentem treningowym, a `service/` niezależną aplikacją FastAPI wykonującą modele. Spring Boot pyta tę usługę przez HTTP i zajmuje się obliczeniami drabinki oraz zapisem. Model jest przechowywany wyłącznie po stronie Pythona.
 
@@ -62,16 +62,39 @@ ML nie zwiększył tutaj trafności wyboru faworyta; nieznacznie zmienił jakoś
 
 Log loss mocno karze pewne, błędne prognozy. Brier score mierzy średni kwadrat błędu prawdopodobieństwa. Artefakt zawiera też przedziały kalibracji: porównanie przewidywanego procentu z odsetkiem zwycięstw w grupie podobnych prognoz.
 
-## Serwowanie modelu i kolejny eksperyment
+## XGBoost z historią: form-xgboost-v2
 
 `service/test_service.py` porównuje odpowiedzi z wartościami kontrolnymi artefaktu i sprawdza kontrakt HTTP. FastAPI odrzuca analizę wcześniejszą niż zadeklarowany koniec treningu. Java nie zawiera już kopii współczynników ani implementacji regresji.
 
 `history_features.py` przygotowuje cechy: Elo ogólne i nawierzchniowe, formę 90 dni, formę nawierzchniową 180 dni, wyniki i liczbę meczów 365 dni oraz H2H. Dane historyczne można pobrać przez `python -m ml.history_features --download`. Wyniki są udostępniane dopiero 21 dni po dacie rozpoczęcia turnieju. To konserwatywne założenie badawcze, a nie rzeczywisty czas publikacji. Testy sprawdzają brak użycia przyszłych wyników, niezależność od kolejności rund i zamianę stron.
 
-Ten moduł nie jest jeszcze wytrenowanym modelem ani źródłem cech dla aktualnego API. Kolejny krok to walidacja chronologiczna modelu wykorzystującego te cechy i porównanie z obecnymi punktami odniesienia.
+Te cechy są już wykorzystywane w API przez `form-xgboost-v2`. Model ma 15 wejść: osiem różnic pomiędzy graczami oraz warunki meczu i wskaźniki kategorii turnieju. Parametry trzech z góry ustalonych wariantów wybieramy wyłącznie na sezonie 2024. Następnie uczymy wybrany wariant na 10 166 meczach dostępnych przed rokiem 2025. Dane 2018–2020 służą do rozgrzania historii, nie do doboru parametrów na teście. Historia do obsługi zapytań obejmuje 20 342 mecze.
+
+Odtworzenie z głównego folderu:
+
+```powershell
+./.venv/Scripts/python.exe -m pip install -r ml/requirements.txt
+./.venv/Scripts/python.exe -m ml.history_features --download
+./.venv/Scripts/python.exe -m ml.train_form
+```
+
+Wyniki trafiają do `target/ml/form-v2/`. Model aplikacji nie jest automatycznie nadpisywany. Zatwierdzone pliki w `ml/artifacts` to model UBJ, metadane i skompresowana historia. API sprawdza ich SHA-256 i odtwarza stan historii wyłącznie do wskazanej daty. Obsługiwane okno predykcji v2: 2024-12-31–2026-06-08. Model wymaga identyfikatorów źródłowych graczy.
+
+| Metoda na wspólnych 2474 meczach testowych | Log loss ↓ | Brier ↓ | Trafność |
+|---|---:|---:|---:|
+| XGBoost: Elo i forma | 0.6158 | 0.2142 | 64.63% |
+| Poprzednia regresja, oceniona ponownie | 0.6263 | 0.2187 | 65.00% |
+| Ranking | 0.6274 | 0.2191 | 65.00% |
+| Samo Elo | 0.6271 | 0.2190 | 63.70% |
+
+Wersja v2 wyklucza dodatkowo wydarzenia drużynowe, Olympics i NextGen, stąd inny rozmiar testu niż w v1. [Mapowanie kategorii i zmiany w czasie](CATEGORIES.md) opisuje m.in. awanse Dallas, Doha i Munich od 2025 oraz wyjątek Astany w 2022. Testy XGBoost i starej regresji w powyższej tabeli dotyczą dokładnie tych samych meczów.
+
+Mirroring w treningu nie gwarantuje symetrii drzew. Dlatego serwowanie jawnie stosuje `P(A,B) = (f(A,B) + 1 - f(B,A))/2`; zamiana stron daje dopełnienie. Paczka maksymalnie 8128 par jest przetwarzana wektorowo. Historia jest buforowana osobno dla dat zapytań.
+
+Raport zawiera kalibrację, wyniki według kategorii, udziały gain cech i sparowany bootstrap różnicy log loss. Ten ostatni zakłada niezależność meczów; powiązania graczy i turniejów ograniczają jego interpretację. Nie stanowi potwierdzenia przewagi na przyszłych sezonach. Gain nie jest wpływem przyczynowym ani wyjaśnieniem pojedynczej prognozy. Historia obejmuje główny ATP Tour; dla wielu słabiej notowanych graczy jest uboga, a neutralne wartości nie zastępują brakujących wyników Challengerów.
 
 ## Źródła i następne ćwiczenie
 
 Dane: Jeff Sackmann, przez [wersjonowane archiwum](https://github.com/Aneeshers/tennis-sackmann-archive/tree/83733587353df8a41f2fd4f516147d5aa83f5a8d), **CC BY-NC-SA 4.0**. Każdy plik ma URL i sumę SHA-256 w manifeście, który trafia do modelu. Dokumentacja algorytmu: [scikit-learn LogisticRegression](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html).
 
-Następne rozszerzenie: Elo i forma z wyników dostępnych przed meczem. Dopiero wtedy warto porównywać bardziej złożone modele, w tym małą sieć neuronową, przy zachowaniu identycznego podziału czasowego.
+Następne badania: walidacja na kolejnych oknach czasowych, kalibracja prawdopodobieństw i poszerzenie historii o niższe poziomy rozgrywek. Sieć neuronowa ma sens jako kolejny porównywany model, z identycznymi danymi i podziałem czasowym.
