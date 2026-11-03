@@ -3,43 +3,77 @@
     <h2>Przewidywany przebieg</h2>
     <span class="muted">Wariant z awansem faworytów</span>
   </div>
-  <div class="bracket">
-    @for (round of forecast().rounds; track round.number) {
+  @if (large()) {
+    <div class="round-tabs" role="tablist" aria-label="Runda turnieju">
+      @for (round of forecast().rounds; track round.number) {
+        <button
+          type="button"
+          role="tab"
+          [attr.aria-selected]="roundIndex() === $index"
+          (click)="roundIndex.set($index)"
+        >
+          {{ round.name }}
+        </button>
+      }
+      <button
+        type="button"
+        role="tab"
+        [attr.aria-selected]="roundIndex() === -1"
+        (click)="roundIndex.set(-1)"
+      >
+        Pełna drabinka
+      </button>
+    </div>
+  }
+  <div class="bracket" [class.compact]="large() && roundIndex() >= 0">
+    @for (round of visibleRounds(); track round.number) {
       <section class="round">
         <h3>{{ round.name }}</h3>
         <div class="round-matches">
           @for (match of round.matches; track $index) {
             <article class="match-card">
-              <button
-                type="button"
-                class="match-row"
-                [class.winner]="match.predictedWinnerId === match.playerA.id"
-                [class.highlighted]="focused() === match.playerA.id"
-                (mouseenter)="focused.set(match.playerA.id)"
-                (mouseleave)="focused.set(null)"
-                (focus)="focused.set(match.playerA.id)"
-                (blur)="focused.set(null)"
-                title="Podświetl drogę zawodnika"
-              >
-                <span
-                  >{{ match.playerA.name }}<small>ATP {{ match.playerA.position }}</small></span
-                ><strong>{{ match.probabilityA * 100 | number: '1.1-1' }}%</strong>
-              </button>
-              <button
-                type="button"
-                class="match-row"
-                [class.winner]="match.predictedWinnerId === match.playerB.id"
-                [class.highlighted]="focused() === match.playerB.id"
-                (mouseenter)="focused.set(match.playerB.id)"
-                (mouseleave)="focused.set(null)"
-                (focus)="focused.set(match.playerB.id)"
-                (blur)="focused.set(null)"
-                title="Podświetl drogę zawodnika"
-              >
-                <span
-                  >{{ match.playerB.name }}<small>ATP {{ match.playerB.position }}</small></span
-                ><strong>{{ match.probabilityB * 100 | number: '1.1-1' }}%</strong>
-              </button>
+              @if (match.playerA; as player) {
+                <button
+                  type="button"
+                  class="match-row"
+                  [class.winner]="match.predictedWinnerId === player.id"
+                  [class.highlighted]="focused() === player.id"
+                  (mouseenter)="focused.set(player.id)"
+                  (mouseleave)="focused.set(null)"
+                  (focus)="focused.set(player.id)"
+                  (blur)="focused.set(null)"
+                  title="Podświetl drogę zawodnika"
+                >
+                  <span
+                    >{{ player.name }}<small>ATP {{ player.position }}</small></span
+                  ><strong>{{
+                    match.bye ? 'Awans' : (match.probabilityA * 100 | number: '1.1-1') + '%'
+                  }}</strong>
+                </button>
+              } @else {
+                <div class="match-row bye">Wolny los</div>
+              }
+              @if (match.playerB; as player) {
+                <button
+                  type="button"
+                  class="match-row"
+                  [class.winner]="match.predictedWinnerId === player.id"
+                  [class.highlighted]="focused() === player.id"
+                  (mouseenter)="focused.set(player.id)"
+                  (mouseleave)="focused.set(null)"
+                  (focus)="focused.set(player.id)"
+                  (blur)="focused.set(null)"
+                  title="Podświetl drogę zawodnika"
+                >
+                  <span
+                    >{{ player.name }}<small>ATP {{ player.position }}</small></span
+                  ><strong>{{
+                    match.bye ? 'Awans' : (match.probabilityB * 100 | number: '1.1-1') + '%'
+                  }}</strong>
+                </button>
+              } @else {
+                <div class="match-row bye">Wolny los</div>
+              }
             </article>
           }
         </div>
@@ -67,7 +101,7 @@
         </tr>
       </thead>
       <tbody>
-        @for (chance of forecast().titleChances; track chance.player.id) {
+        @for (chance of visibleChances(); track chance.player.id) {
           <tr>
             <td>{{ chance.player.name }}</td>
             <td class="muted">{{ chance.player.position }}</td>
@@ -82,5 +116,14 @@
       </tbody>
     </table>
   </div>
+  @if (forecast().titleChances.length > 16) {
+    <button class="text" type="button" (click)="showAll.set(!showAll())">
+      {{
+        showAll()
+          ? 'Pokaż pierwszych 16'
+          : 'Pokaż wszystkich (' + forecast().titleChances.length + ')'
+      }}
+    </button>
+  }
   <p class="muted">Suma szans przed zaokrągleniem wynosi 100%. Są to wyniki wybranego modelu.</p>
 </section>

@@ -62,12 +62,12 @@
     @if (result.match; as match) {
       <div class="panel-heading" style="margin-top: 18px">
         <div>
-          {{ match.playerA.name }}
+          {{ match.playerA?.name }}
           <strong>{{ match.probabilityA * 100 | number: '1.1-1' }}%</strong>
         </div>
         <div>
           <strong>{{ match.probabilityB * 100 | number: '1.1-1' }}%</strong>
-          {{ match.playerB.name }}
+          {{ match.playerB?.name }}
         </div>
       </div>
       <div style="height: 8px; background: var(--line); border-radius: 4px; overflow: hidden">

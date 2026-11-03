@@ -235,8 +235,8 @@ export class DrawPage {
           const ids =
             draw.playerIds ||
             draw.forecast?.rounds[0]?.matches.flatMap((match) => [
-              match.playerA.id,
-              match.playerB.id,
+              match.playerA?.id ?? null,
+              match.playerB?.id ?? null,
             ]) ||
             [];
           this.form = {

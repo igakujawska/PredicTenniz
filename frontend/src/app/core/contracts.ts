@@ -39,8 +39,8 @@ export interface ModelInfo {
   notes?: string[];
 }
 export interface Match {
-  playerA: Player;
-  playerB: Player;
+  playerA: Player | null;
+  playerB: Player | null;
   probabilityA: number;
   probabilityB: number;
   predictedWinnerId: number;
@@ -61,7 +61,7 @@ export interface Forecast {
 export interface DrawRequest {
   title: string;
   asOf: string;
-  playerIds: number[];
+  playerIds: (number | null)[];
   formatCode?: string;
   surface: Surface;
   bestOf: number;
@@ -74,7 +74,7 @@ export interface Draw {
   asOf: string;
   createdAt: string | null;
   version?: number;
-  playerIds: number[];
+  playerIds: (number | null)[];
   formatCode?: string;
   surface: Surface;
   bestOf: number;

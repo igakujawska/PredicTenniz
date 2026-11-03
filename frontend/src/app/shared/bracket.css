@@ -96,3 +96,32 @@
     gap: 4px;
   }
 }
+
+.round-tabs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+.round-tabs button {
+  font-size: 11px;
+  padding: 6px 9px;
+}
+.round-tabs button[aria-selected='true'] {
+  background: var(--tint);
+  border-color: var(--accent);
+}
+.bracket.compact {
+  display: block;
+}
+.compact .round-matches {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  align-items: start;
+}
+.bye {
+  color: var(--muted);
+  font-style: italic;
+  cursor: default;
+  background: var(--bg);
+}
