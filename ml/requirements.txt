@@ -1,2 +1,4 @@
 numpy==2.3.5
 scikit-learn==1.9.1
+xgboost-cpu==3.4.1; platform_system == "Linux" and platform_machine == "x86_64"
+xgboost==3.4.1; platform_system != "Linux" or platform_machine != "x86_64"
