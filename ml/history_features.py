@@ -19,14 +19,17 @@ from urllib.request import Request, urlopen
 import numpy as np
 try:
     from .download_matches import BASE, REVISION, ROOT
+    from .tournament_categories import category_for
 except ImportError:  # Allow python ml/history_features.py as well as package imports.
     from download_matches import BASE, REVISION, ROOT
+    from tournament_categories import category_for
 
 SURFACES = ("HARD", "CLAY", "GRASS")
 EMBARGO_DAYS = 21
 FEATURE_NAMES = ("log_rank_ratio", "elo_difference", "surface_elo_difference", "form_90_difference",
                  "surface_form_180_difference", "win_rate_365_difference", "experience_365_difference",
-                 "head_to_head_advantage", "best_of_five", "clay", "grass")
+                 "head_to_head_advantage", "best_of_five", "clay", "grass",
+                 "atp_500", "masters_1000", "grand_slam", "finals")
 DIRECTED_FEATURES = 8
 
 
@@ -39,6 +42,7 @@ class Event:
     loser_rank: int | None
     surface: str = "HARD"
     best_of: int = 3
+    category: str = "TOUR"
 
 
 @dataclass
@@ -122,7 +126,7 @@ class History:
         self.profile_cache[player_id] = profile
         return profile
 
-    def features(self, player_a, player_b, rank_a, rank_b, surface, best_of, day):
+    def features(self, player_a, player_b, rank_a, rank_b, surface, best_of, day, category="TOUR"):
         if min(rank_a, rank_b) < 1 or surface not in SURFACES or best_of not in (3, 5):
             raise ValueError("Invalid match inputs")
         a, b = self.profile(player_a, day), self.profile(player_b, day)
@@ -134,7 +138,8 @@ class History:
             (a["surfaceElo"][surface] - b["surfaceElo"][surface]) / 400,
             a["form90"] - b["form90"], a["surfaceForm180"][surface] - b["surfaceForm180"][surface],
             a["winRate365"] - b["winRate365"], math.log1p(a["matches365"]) - math.log1p(b["matches365"]),
-            (wins_a - wins_b) / (sum(wins) + 2), float(best_of == 5), float(surface == "CLAY"), float(surface == "GRASS")
+            (wins_a - wins_b) / (sum(wins) + 2), float(best_of == 5), float(surface == "CLAY"), float(surface == "GRASS"),
+            float(category == "ATP_500"), float(category == "MASTERS_1000"), float(category == "GRAND_SLAM"), float(category == "FINALS")
         ], dtype=np.float32)
 
 
@@ -167,6 +172,8 @@ def load_events():
     manifest = json.loads((directory / "manifest.json").read_text(encoding="utf-8"))
     if {item["file"] for item in manifest["files"]} != {f"atp_matches_{year}.csv" for year in range(2018, 2027)}:
         raise ValueError("Expected complete pinned history manifest for 2018-2026")
+    if manifest.get("revision") != REVISION:
+        raise ValueError("History must use the reviewed archive revision")
     events, seen, quality = [], {}, Counter()
     required = {"tourney_id", "match_num", "tourney_date", "tourney_level", "score", "winner_id", "loser_id",
                 "winner_rank", "loser_rank", "surface", "best_of"}
@@ -191,6 +198,10 @@ def load_events():
                 if row["tourney_level"] not in ("A", "M", "G", "F"):
                     quality["excluded_level"] += 1
                     continue
+                category = category_for(row["tourney_level"], row["tourney_id"], int(row["tourney_date"][:4]))
+                if category is None:
+                    quality["excluded_nonstandard_competition"] += 1
+                    continue
                 score = row["score"].upper()
                 if not score or any(marker in score for marker in ("RET", "W/O", "DEF", "ABD", "ABN", "WALKOVER")):
                     quality["unfinished"] += 1
@@ -210,7 +221,7 @@ def load_events():
                         return result if result > 0 else None
                     except (ValueError, TypeError):
                         return None
-                events.append(Event(event_date, winner, loser, rank(row["winner_rank"]), rank(row["loser_rank"]), surface, best_of))
+                events.append(Event(event_date, winner, loser, rank(row["winner_rank"]), rank(row["loser_rank"]), surface, best_of, category))
                 quality["accepted_for_history"] += 1
     return sorted(events, key=lambda event: event.event_date), dict(quality), manifest
 
@@ -222,7 +233,7 @@ def build_examples(events):
         state.advance(day)
         for event in batch:
             if event.winner_rank is not None and event.loser_rank is not None and day.year >= 2021:
-                x = state.features(event.winner, event.loser, event.winner_rank, event.loser_rank, event.surface, event.best_of, day)
+                x = state.features(event.winner, event.loser, event.winner_rank, event.loser_rank, event.surface, event.best_of, day, event.category)
                 examples.append((event, x))
         for event in batch:
             state.schedule(event)
