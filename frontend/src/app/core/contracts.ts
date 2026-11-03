@@ -23,7 +23,20 @@ export interface ModelInfo {
   trainedThrough?: string | null;
   testYear?: number | null;
   testMatches?: number | null;
-  metrics?: { ml: Scores; baseline: Scores; coinFlip: Scores } | null;
+  metrics?: {
+    ml: Scores;
+    baseline: Scores;
+    coinFlip: Scores;
+    logistic?: Scores | null;
+    elo?: Scores | null;
+  } | null;
+  dataThrough?: string | null;
+  trainMatches?: number | null;
+  historyMatches?: number | null;
+  featureNames?: string[];
+  featureImportance?: { feature: string; gainShare: number }[];
+  categoryScores?: Record<string, { matches: number; model: Scores; ranking: Scores }>;
+  notes?: string[];
 }
 export interface Match {
   playerA: Player;
@@ -31,6 +44,7 @@ export interface Match {
   probabilityA: number;
   probabilityB: number;
   predictedWinnerId: number;
+  bye?: boolean;
 }
 export interface Round {
   number: number;
@@ -48,6 +62,7 @@ export interface DrawRequest {
   title: string;
   asOf: string;
   playerIds: number[];
+  formatCode?: string;
   surface: Surface;
   bestOf: number;
   modelVersion: string;
@@ -60,15 +75,29 @@ export interface Draw {
   createdAt: string | null;
   version?: number;
   playerIds: number[];
+  formatCode?: string;
   surface: Surface;
   bestOf: number;
   modelVersion: string;
   forecast: Forecast | null;
   predictionError?: string | null;
+  formatInfo?: TournamentFormatInfo;
 }
 export interface DrawSummary {
   id: string;
   title: string;
   asOf: string;
   players: number;
+}
+
+export interface TournamentFormatInfo {
+  code: string;
+  label: string;
+  category: string;
+  entrants: number;
+  drawSize: number;
+  byes: number;
+  seeds: number;
+  bestOf: number;
+  championPoints: number;
 }

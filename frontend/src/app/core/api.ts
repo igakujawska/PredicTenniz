@@ -1,7 +1,14 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 import { Observable, catchError, shareReplay, switchMap, throwError } from 'rxjs';
-import { Catalog, Draw, DrawRequest, DrawSummary, ModelInfo } from './contracts';
+import {
+  Catalog,
+  Draw,
+  DrawRequest,
+  DrawSummary,
+  ModelInfo,
+  TournamentFormatInfo,
+} from './contracts';
 
 interface CsrfSession {
   headerName: string;
@@ -15,6 +22,9 @@ export class Api {
 
   players(asOf?: string) {
     return this.http.get<Catalog>('/api/tournaments/players', { params: asOf ? { asOf } : {} });
+  }
+  formats() {
+    return this.http.get<TournamentFormatInfo[]>('/api/tournaments/formats');
   }
   models() {
     return this.http.get<ModelInfo[]>('/api/tournaments/models');
