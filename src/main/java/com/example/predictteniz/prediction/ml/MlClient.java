@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.ResourceAccessException;
@@ -13,6 +14,7 @@ import org.springframework.web.client.RestClientResponseException;
 import org.springframework.web.server.ResponseStatusException;
 import tools.jackson.databind.json.JsonMapper;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class MlClient {
@@ -43,6 +45,7 @@ public class MlClient {
     }
 
     private ResponseStatusException translate(RestClientException error) {
+        log.debug("ML API request failed", error);
         if (error instanceof ResourceAccessException)
             return new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
                 "Silnik ML jest niedostępny. Uruchom aplikację Python i spróbuj ponownie.", error);
