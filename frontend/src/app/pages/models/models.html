@@ -1,7 +1,9 @@
 <div class="page-heading">
   <div>
     <h1>Modele i ocena</h1>
-    <p class="muted">Wyniki eksperymentu przechowywane wraz z wersją modelu w serwisie Python.</p>
+    <p class="muted">
+      Metryki pochodzą z zapisanych eksperymentów. Wersja modelu pozostaje częścią każdej prognozy.
+    </p>
   </div>
 </div>
 @if (error()) {
@@ -15,39 +17,59 @@
     </div>
     @if (model.trained) {
       <p class="muted">
-        Trening do {{ model.trainedThrough | date: 'dd.MM.yyyy' }} · test: sezon
-        {{ model.testYear }}, {{ model.testMatches }} meczów.
+        Trening do {{ model.trainedThrough | date: 'dd.MM.yyyy' }} · test:
+        {{ model.testMatches }} meczów sezonu {{ model.testYear }}.
       </p>
     } @else {
+      <p>Przejrzysty wzór rankingowy, stanowiący punkt odniesienia dla modeli uczonych z danych.</p>
+    }
+    @if (model.historyMatches) {
       <p class="muted">
-        Heurystyka oparta na stosunku rankingów. Punkt odniesienia dla modelu uczonego z danych. Nie
-        reaguje na zmianę nawierzchni ani formatu.
+        {{ model.historyMatches | number }} meczów w historii ·
+        {{ model.trainMatches | number }} przykładów treningowych · dane do
+        {{ model.dataThrough | date: 'dd.MM.yyyy' }}
       </p>
     }
     @if (model.metrics; as metrics) {
-      <div class="table-wrap" style="margin-top: 20px">
+      <div class="table-wrap" style="margin-top: 18px">
         <table>
           <thead>
             <tr>
-              <th>Metoda</th>
+              <th>Metoda na tym samym zbiorze testowym</th>
               <th class="number">Log loss ↓</th>
-              <th class="number">Brier score ↓</th>
+              <th class="number">Brier ↓</th>
               <th class="number">Trafność ↑</th>
             </tr>
           </thead>
           <tbody>
             <tr>
-              <td>Regresja logistyczna</td>
+              <td>{{ model.label }}</td>
               <td class="number">{{ metrics.ml.logLoss | number: '1.4-4' }}</td>
               <td class="number">{{ metrics.ml.brierScore | number: '1.4-4' }}</td>
               <td class="number">{{ metrics.ml.accuracy * 100 | number: '1.2-2' }}%</td>
             </tr>
+            @if (metrics.logistic; as score) {
+              <tr>
+                <td>Poprzednia regresja logistyczna</td>
+                <td class="number">{{ score.logLoss | number: '1.4-4' }}</td>
+                <td class="number">{{ score.brierScore | number: '1.4-4' }}</td>
+                <td class="number">{{ score.accuracy * 100 | number: '1.2-2' }}%</td>
+              </tr>
+            }
             <tr>
-              <td>Ranking bazowy</td>
+              <td>Wzór rankingowy</td>
               <td class="number">{{ metrics.baseline.logLoss | number: '1.4-4' }}</td>
               <td class="number">{{ metrics.baseline.brierScore | number: '1.4-4' }}</td>
               <td class="number">{{ metrics.baseline.accuracy * 100 | number: '1.2-2' }}%</td>
             </tr>
+            @if (metrics.elo; as score) {
+              <tr>
+                <td>Samo Elo</td>
+                <td class="number">{{ score.logLoss | number: '1.4-4' }}</td>
+                <td class="number">{{ score.brierScore | number: '1.4-4' }}</td>
+                <td class="number">{{ score.accuracy * 100 | number: '1.2-2' }}%</td>
+              </tr>
+            }
             <tr>
               <td>50 / 50</td>
               <td class="number">{{ metrics.coinFlip.logLoss | number: '1.4-4' }}</td>
@@ -57,22 +79,92 @@
           </tbody>
         </table>
       </div>
-      <p class="notice" style="margin-top: 20px">
-        Przewaga nad rankingiem jest niewielka. Wynik na jednym sezonie nie potwierdza skuteczności
-        na przyszłych meczach.
+      <p class="notice" style="margin-top: 18px">
+        Lepsze prawdopodobieństwa nie muszą oznaczać większej trafności typów. Wersja v2 wyklucza
+        dodatkowo rozgrywki o odmiennym formacie, dlatego ma 2474 mecze testowe. Wszystkie metody w
+        jej tabeli oceniono ponownie na tych samych meczach.
       </p>
+    }
+    @for (note of model.notes || []; track note) {
+      <p class="muted">{{ note }}</p>
+    }
+    @if (model.featureImportance?.length) {
+      <details style="margin-top: 20px" open>
+        <summary>Co wykorzystuje XGBoost?</summary>
+        <p class="muted">
+          Udział cechy w przyroście jakości podziałów drzew. To opis dopasowanego modelu, nie wpływ
+          przyczynowy ani wyjaśnienie pojedynczego meczu.
+        </p>
+        <div style="display: grid; gap: 9px; margin-top: 16px; max-width: 720px">
+          @for (gain of model.featureImportance || []; track gain.feature) {
+            <div
+              style="
+                display: grid;
+                grid-template-columns: minmax(170px, 1fr) 2fr 54px;
+                gap: 12px;
+                align-items: center;
+                font-size: 12px;
+              "
+            >
+              <span>{{ featureLabel(gain.feature) }}</span>
+              <div style="height: 6px; background: var(--line); border-radius: 3px">
+                <div
+                  [style.width.%]="gain.gainShare * 100"
+                  style="height: 100%; background: var(--accent); border-radius: 3px"
+                ></div>
+              </div>
+              <span class="number">{{ gain.gainShare * 100 | number: '1.1-1' }}%</span>
+            </div>
+          }
+        </div>
+      </details>
+    }
+    @if (model.categoryScores; as categories) {
+      @if ((categories | keyvalue).length) {
+        <details style="margin-top: 22px">
+          <summary>Wyniki według kategorii turnieju</summary>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Kategoria</th>
+                  <th class="number">Mecze</th>
+                  <th class="number">Log loss ML</th>
+                  <th class="number">Log loss rankingu</th>
+                  <th class="number">Trafność ML</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (item of categories | keyvalue; track item.key) {
+                  <tr>
+                    <td>{{ item.key }}</td>
+                    <td class="number">{{ item.value.matches }}</td>
+                    <td class="number">{{ item.value.model.logLoss | number: '1.4-4' }}</td>
+                    <td class="number">{{ item.value.ranking.logLoss | number: '1.4-4' }}</td>
+                    <td class="number">{{ item.value.model.accuracy * 100 | number: '1.2-2' }}%</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          <p class="muted">
+            Mniejsze grupy mają mniej pewne wyniki. Nie wybieraliśmy modelu na podstawie tych
+            testowych podgrup.
+          </p>
+        </details>
+      }
     }
   </section>
 }
 <section class="panel">
-  <h2>Co model bierze pod uwagę?</h2>
+  <h2>Co wyniki mówią o przyszłości?</h2>
   <p>
-    Obecna regresja wykorzystuje różnicę logarytmów rankingów, nawierzchnię i format meczu. Nie zna
-    kontuzji, bieżącej formy ani zmęczenia. Szansa na tytuł uwzględnia wszystkich możliwych rywali w
-    drabince, ale nadal zależy od tych ograniczonych danych.
+    To retrospektywny test na jednym sezonie. Modele nie znają kontuzji, dyspozycji w dniu meczu ani
+    rzeczywistych godzin publikacji wszystkich danych. XGBoost korzysta z historii udostępnianej po
+    konserwatywnym opóźnieniu 21 dni od rozpoczęcia turnieju. Gracz bez wcześniejszych wyników
+    otrzymuje neutralne Elo i wygładzoną formę.
   </p>
   <p class="muted">
-    Dokumentacja treningu i pochodzenia danych znajduje się w folderze ml repozytorium. Kolejny etap
-    badawczy to porównanie z modelem uwzględniającym historię wyników.
+    Kod treningu, raport i pochodzenie danych znajdują się w folderze ml repozytorium.
   </p>
 </section>
