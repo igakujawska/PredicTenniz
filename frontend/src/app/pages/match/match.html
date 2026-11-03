@@ -1,0 +1,81 @@
+<div class="page-heading">
+  <div>
+    <h1>Pojedynek</h1>
+    <p class="muted">Porównaj odpowiedzi modeli dla tych samych zawodników i warunków.</p>
+  </div>
+</div>
+@if (error()) {
+  <div class="error" role="alert">{{ error() }}</div>
+}
+<section class="panel" style="max-width: 850px; margin-bottom: 20px">
+  <div class="fields">
+    <div class="field">
+      <label for="match-a">Zawodnik A</label
+      ><select id="match-a" [(ngModel)]="a" (ngModelChange)="changed()">
+        @for (player of players(); track player.id) {
+          <option [ngValue]="player.id">{{ player.position }}. {{ player.name }}</option>
+        }
+      </select>
+    </div>
+    <div class="field">
+      <label for="match-b">Zawodnik B</label
+      ><select id="match-b" [(ngModel)]="b" (ngModelChange)="changed()">
+        @for (player of players(); track player.id) {
+          <option [ngValue]="player.id">{{ player.position }}. {{ player.name }}</option>
+        }
+      </select>
+    </div>
+    <div class="field">
+      <label for="match-surface">Nawierzchnia</label
+      ><select id="match-surface" [(ngModel)]="surface" (ngModelChange)="changed()">
+        <option value="HARD">Hard</option>
+        <option value="CLAY">Clay</option>
+        <option value="GRASS">Grass</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="match-format">Format</label
+      ><select id="match-format" [(ngModel)]="bestOf" (ngModelChange)="changed()">
+        <option [ngValue]="3">Best of 3</option>
+        <option [ngValue]="5">Best of 5</option>
+      </select>
+    </div>
+  </div>
+  <div class="panel-heading" style="margin-top: 16px; margin-bottom: 0">
+    <span class="muted">Dane do {{ asOf | date: 'dd.MM.yyyy' }}</span
+    ><button type="button" (click)="swap()">Zamień strony</button>
+  </div>
+</section>
+@if (loading()) {
+  <div
+    class="skeleton"
+    style="height: 150px; max-width: 850px"
+    aria-label="Przeliczanie porównania"
+  ></div>
+}
+@for (result of results(); track result.model.version) {
+  <section class="panel" style="max-width: 850px; margin-bottom: 16px">
+    <h2>{{ result.model.label }}</h2>
+    @if (result.error) {
+      <p class="error" role="alert">{{ result.error }}</p>
+    }
+    @if (result.match; as match) {
+      <div class="panel-heading" style="margin-top: 18px">
+        <div>
+          {{ match.playerA.name }}
+          <strong>{{ match.probabilityA * 100 | number: '1.1-1' }}%</strong>
+        </div>
+        <div>
+          <strong>{{ match.probabilityB * 100 | number: '1.1-1' }}%</strong>
+          {{ match.playerB.name }}
+        </div>
+      </div>
+      <div style="height: 8px; background: var(--line); border-radius: 4px; overflow: hidden">
+        <div
+          [style.width.%]="match.probabilityA * 100"
+          style="height: 100%; background: var(--accent); transition: width 0.25s ease"
+        ></div>
+      </div>
+    }
+  </section>
+}
