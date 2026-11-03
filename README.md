@@ -2,6 +2,13 @@
 
 Aplikacja do analizy drabinek ATP: ustaw pary, porównaj modele dla jednego meczu, sprawdź wszystkie możliwe drogi do tytułu i zapisz turniej. Projekt rozwijany w IntelliJ, z osobnymi aplikacjami Java, Python i Angular w jednym repozytorium.
 
+<details>
+<summary>Podgląd Angulara — ciemny motyw</summary>
+
+![Drabinka PredictTeniz w niezależnej aplikacji Angular](docs/images/dashboard-angular.jpg)
+
+</details>
+
 ## Podział aplikacji
 
 | Część | Katalog | Odpowiedzialność | Adres lokalny |
