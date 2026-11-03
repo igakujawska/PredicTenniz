@@ -1,0 +1,197 @@
+{
+  "schemaVersion": 1,
+  "version": "rank-logistic-v1",
+  "label": "Regresja logistyczna ML",
+  "trainedThrough": "2024-12-31",
+  "coefficients": {
+    "hard": 0.5000920983683036,
+    "clay": 0.49567675768213076,
+    "grass": 0.4195178462479373,
+    "bestOf5": 0.2588731446757481
+  },
+  "featureDefinition": "log(rankB/rankA) by surface plus best-of-five interaction; no intercept",
+  "testYear": 2025,
+  "testMatches": 2483,
+  "metrics": {
+    "ml": {
+      "logLoss": 0.6265966680834648,
+      "brierScore": 0.2188580332042564,
+      "accuracy": 0.6492146596858639
+    },
+    "baseline": {
+      "logLoss": 0.6276411179491265,
+      "brierScore": 0.21920252962201464,
+      "accuracy": 0.6492146596858639
+    },
+    "coinFlip": {
+      "logLoss": 0.6931471805599454,
+      "brierScore": 0.25,
+      "accuracy": 0.5
+    }
+  },
+  "calibration": [
+    {
+      "predicted": 0.06785522009716065,
+      "observed": 0.031746031746031744,
+      "observations": 63
+    },
+    {
+      "predicted": 0.15862439904585662,
+      "observed": 0.208955223880597,
+      "observations": 201
+    },
+    {
+      "predicted": 0.2552298484996296,
+      "observed": 0.25,
+      "observations": 428
+    },
+    {
+      "predicted": 0.3538598984033075,
+      "observed": 0.3451202263083451,
+      "observations": 707
+    },
+    {
+      "predicted": 0.45156777180023894,
+      "observed": 0.43911439114391143,
+      "observations": 1084
+    },
+    {
+      "predicted": 0.5484322281997611,
+      "observed": 0.5608856088560885,
+      "observations": 1084
+    },
+    {
+      "predicted": 0.6461401015966926,
+      "observed": 0.6548797736916548,
+      "observations": 707
+    },
+    {
+      "predicted": 0.7447701515003704,
+      "observed": 0.75,
+      "observations": 428
+    },
+    {
+      "predicted": 0.8413756009541434,
+      "observed": 0.7910447761194029,
+      "observations": 201
+    },
+    {
+      "predicted": 0.9321447799028394,
+      "observed": 0.9682539682539683,
+      "observations": 63
+    }
+  ],
+  "parityCases": [
+    {
+      "rankA": 1,
+      "rankB": 16,
+      "surface": "HARD",
+      "bestOf": 3,
+      "probability": 0.8000408530137891
+    },
+    {
+      "rankA": 1,
+      "rankB": 16,
+      "surface": "CLAY",
+      "bestOf": 3,
+      "probability": 0.7980752500355145
+    },
+    {
+      "rankA": 1,
+      "rankB": 16,
+      "surface": "GRASS",
+      "bestOf": 5,
+      "probability": 0.8677143775139015
+    },
+    {
+      "rankA": 27,
+      "rankB": 13,
+      "surface": "HARD",
+      "bestOf": 5,
+      "probability": 0.3647704412975384
+    },
+    {
+      "rankA": 10,
+      "rankB": 10,
+      "surface": "CLAY",
+      "bestOf": 3,
+      "probability": 0.5
+    }
+  ],
+  "protocol": {
+    "trainMatches": 7797,
+    "validationMatches": 2638,
+    "finalTrainMatches": 10435,
+    "embargoDays": 21,
+    "lastTrainingEvent": "2024-11-11",
+    "validationCandidates": [
+      {
+        "C": 0.1,
+        "logLoss": 0.6268380164836841,
+        "brierScore": 0.21958879275589271,
+        "accuracy": 0.6383623957543594
+      },
+      {
+        "C": 1.0,
+        "logLoss": 0.6268684212963038,
+        "brierScore": 0.21960364543007532,
+        "accuracy": 0.6383623957543594
+      },
+      {
+        "C": 10.0,
+        "logLoss": 0.6268717066803678,
+        "brierScore": 0.21960521872224673,
+        "accuracy": 0.6383623957543594
+      }
+    ],
+    "selectedC": 0.1,
+    "scikitLearnVersion": "1.9.1",
+    "numpyVersion": "2.3.5"
+  },
+  "dataQuality": {
+    "read": 14656,
+    "accepted": 13008,
+    "unfinished": 487,
+    "invalid_or_missing_features": 28,
+    "excluded_level": 1133
+  },
+  "provenance": {
+    "compiler": "Jeff Sackmann",
+    "mirror": "Aneeshers/tennis-sackmann-archive",
+    "revision": "83733587353df8a41f2fd4f516147d5aa83f5a8d",
+    "license": "CC BY-NC-SA 4.0",
+    "files": [
+      {
+        "file": "atp_matches_2021.csv",
+        "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/83733587353df8a41f2fd4f516147d5aa83f5a8d/atp/atp_matches_2021.csv",
+        "sha256": "b9b1d31a4b0b9273b8f338cbb1347c5a847ad2361334ec760a286f5990fba347"
+      },
+      {
+        "file": "atp_matches_2022.csv",
+        "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/83733587353df8a41f2fd4f516147d5aa83f5a8d/atp/atp_matches_2022.csv",
+        "sha256": "7190042565ab8400e74f44fda60700acb36ddf3c82d393f331a07589e05b5f52"
+      },
+      {
+        "file": "atp_matches_2023.csv",
+        "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/83733587353df8a41f2fd4f516147d5aa83f5a8d/atp/atp_matches_2023.csv",
+        "sha256": "9b9671aa7c8156e74c2e4466675b7ed4e762bb8a58b7237a30daefd84ffceff5"
+      },
+      {
+        "file": "atp_matches_2024.csv",
+        "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/83733587353df8a41f2fd4f516147d5aa83f5a8d/atp/atp_matches_2024.csv",
+        "sha256": "73aec32247a0db68d8aa8fd8003eefea132905177f1cb145502d9215b53311be"
+      },
+      {
+        "file": "atp_matches_2025.csv",
+        "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/83733587353df8a41f2fd4f516147d5aa83f5a8d/atp/atp_matches_2025.csv",
+        "sha256": "78c356ef9328b89ae58a17564d61c02cdad2a3a007f6b8af5cfc17992b11bb2d"
+      }
+    ]
+  },
+  "limitations": [
+    "Tournament start dates approximate availability; 21-day embargo is an assumption.",
+    "Only completed ATP main-tour hard/clay/grass matches with known ranks are evaluated.",
+    "No recent form, injuries, serve statistics or player-specific features.",
+    "Held-out 2025 results do not establish live 2026 performance."
+  ]
+}
